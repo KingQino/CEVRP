@@ -33,14 +33,17 @@ public:
     ~Case();
     void read_problem(const string& filePath);					//reads .evrp file
     static double **generate_2D_matrix_double(int n, int m);
+    void init_customer_to_customers_maps(); // initialize customerClusterMap and customerRestrictedCandidateListMap
+    void init_customer_nearest_station_map();
     double euclidean_distance(int i, int j);
     [[nodiscard]] int get_best_station(int from, int to) const;
     [[nodiscard]] int get_best_and_feasible_station(int from, int to, double max_dis) const; // the station within allowed max distance from "from", and min dis[from][s]+dis[to][s]
     [[nodiscard]] int get_customer_demand(int customer) const;				//returns the customer demand
     [[nodiscard]] double get_distance(int from, int to);				//returns the distance
-    void init_customer_to_customers_maps(); // initialize customerClusterMap and customerRestrictedCandidateListMap
-    void init_customer_nearest_station_map();
     [[nodiscard]] double get_evals() const;									//returns the number of evaluations
+    [[nodiscard]] double compute_total_distance(const vector<vector<int>>& routes); // customized fitness function
+    [[nodiscard]] vector<int> compute_demand_sum(const vector<vector<int>>& routes) const; // compute the demand sum of all customers for each route.
+    [[nodiscard]] bool is_charging_station(int node) const;					//returns true if node is a charging station
 
 
     int id;

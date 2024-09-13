@@ -244,3 +244,38 @@ double Case::get_evals() const {
     return evals;
 }
 
+double Case::compute_total_distance(const vector<vector<int>> &routes) {
+    double tour_length = 0.0;
+    for (auto& route : routes) {
+        for (int j = 0; j < route.size() - 1; ++j) {
+            tour_length += distances[route[j]][route[j + 1]];
+        }
+    }
+
+    evals++;
+
+    return tour_length;
+}
+
+vector<int> Case::compute_demand_sum(const vector<vector<int>> &routes) const {
+    vector<int> demand_sum;
+    for (auto & route : routes) {
+        int temp = 0;
+        for (int node : route) {
+            temp += get_customer_demand(node);
+        }
+        demand_sum.push_back(temp);
+    }
+
+    return demand_sum;
+}
+
+bool Case::is_charging_station(int node) const {
+
+    bool flag;
+    if (node == depot || ( node >= depotNumber + customerNumber && node < actualProblemSize))
+        flag = true;
+    else
+        flag = false;
+    return flag;
+}
