@@ -7,6 +7,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(DEPENDENCIES
         include/case.hpp
         src/case.cpp
+        include/individual.hpp
+        src/individual.cpp
+        include/utils.hpp
+        src/utils.cpp
 )
 
 
@@ -18,6 +22,7 @@ target_include_directories(CEVRP PRIVATE include external/include)
 add_subdirectory(external/googletest) # Add GoogleTest as a subdirectory
 add_executable(Tests tests/test_main.cpp
         ${DEPENDENCIES}
-        tests/case_test.cpp)
+        tests/case_test.cpp
+        tests/utils_test.cpp)
 target_include_directories(Tests PRIVATE include external/include) # Include directories for the tests
 target_link_libraries(Tests gtest gtest_main) # Link GoogleTest for tests
