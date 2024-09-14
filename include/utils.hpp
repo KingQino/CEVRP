@@ -11,7 +11,9 @@
 #include <cstring>
 #include <numeric>
 #include <memory>
+
 #include "case.hpp"
+#include "individual.hpp"
 
 using namespace std;
 
@@ -33,6 +35,13 @@ void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::defa
 vector<vector<int>> routes_constructor_with_split(Case& instance, std::default_random_engine& rng);
 vector<vector<int>> routes_constructor_with_hien_method(const Case& instance, std::default_random_engine& rng);
 vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance, std::default_random_engine& rng);
+
+// upper-level optimisation: local search operators => minimise the upper cost
+// due to the observation that the lower cost (CEVRP) is highly positive correlation with the upper cost (CVRP)
+void two_opt_for_single_route(int* route, int length, double& cost, Case& instance);
+void two_opt_for_individual(Individual& individual, Case& instance); // two-arcs exchange, intra-route
+
+
 
 
 

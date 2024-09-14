@@ -76,3 +76,18 @@ TEST_F(UtilsTest, RoutesConstructor) {
     EXPECT_EQ(routes_z[0][0], 0);
     EXPECT_EQ(routes_z[-1][-1], 0);
 }
+
+TEST_F(UtilsTest, TwoOptForIndividual) {
+    vector<vector<int>> routes = {
+            {0, 2, 1, 5, 7, 6, 9, 8, 0},
+            {0, 3, 4, 11, 10, 13, 0},
+            {0, 21, 19, 17, 20, 0},
+            {0, 14, 16, 12, 15, 18, 0}
+    };
+    vector<int> demand_sum = {6000, 5500, 5900, 5100};
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, 485.60155200568835, demand_sum);
+
+    two_opt_for_individual(*ind, *instance);
+
+    EXPECT_EQ(ind->upper_cost, 385.2853879430639);
+}

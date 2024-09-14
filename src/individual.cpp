@@ -62,3 +62,34 @@ Individual::~Individual() {
     delete[] this->node_num;
     delete[] this->demand_sum;
 }
+
+std::ostream& operator<<(std::ostream& os, const Individual& individual) {
+    os << "Route Capacity: " << individual.route_cap << "\n";
+    os << "Node Capacity: " << individual.node_cap << "\n";
+    os << "Number of Routes: " << individual.route_num << "\n";
+    os << "Upper Cost: " << individual.upper_cost << "\n";
+    os << "Lower Cost: " << individual.lower_cost << "\n";
+
+    os << "Number of Nodes per route: ";
+    for (int i = 0; i < individual.route_cap; ++i) {
+        os << individual.node_num[i] << " ";
+    }
+    os << "\n";
+
+    os << "Demand sum per route: ";
+    for (int i = 0; i < individual.route_cap; ++i) {
+        os << individual.demand_sum[i] << " ";
+    }
+    os << "\n";
+
+    for (int i = 0; i < individual.route_cap; ++i) {
+        os << "Route " << i + 1 << ": ";
+        for (int j = 0; j < individual.node_cap; ++j) {
+            os << individual.routes[i][j] << " ";
+        }
+        os << "\n";
+    }
+    os << "\n";
+
+    return os;
+}

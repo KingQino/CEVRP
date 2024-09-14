@@ -6,6 +6,10 @@
 
 
 
+/****************************************************************/
+/*                  Get Upper-level Solution                    */
+/****************************************************************/
+
 // Prins, C., 2004. A simple and effective evolutionary algorithm for the vehicle routing problem. Computers & operations research, 31(12), pp.1985-2002.
 vector<vector<int>> prins_split(const vector<int>& chromosome, Case& instance) {
     vector<int> x(chromosome.size() + 1, 0); // a giant tour starts from 0
@@ -204,4 +208,41 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
     all_routes.push_back(route);
 
     return all_routes;
+}
+
+/****************************************************************/
+/*                    Local search Operators                    */
+/****************************************************************/
+
+void two_opt_for_single_route(int* route, int length, double& cost, Case& instance) {
+    bool improved = true;
+
+    while (improved) {
+        improved = false;
+
+        for (size_t i = 1; i < length - 2; ++i) {
+            for (size_t j = i + 1; j < length - 1; ++j) {
+                // Calculate the cost difference between the old route and the new route obtained by swapping edges
+                double oldCost = instance.get_distance(route[i - 1], route[i]) +
+                                 instance.get_distance(route[j], route[j + 1]);
+
+                double newCost = instance.get_distance(route[i - 1], route[j]) +
+                                 instance.get_distance(route[i], route[j + 1]);
+
+                if (newCost < oldCost) {
+                    // The cost variation should be considered
+                    reverse(route + i, route + j + 1);
+                    improved = true;
+                    cost += newCost - oldCost;
+                }
+            }
+        }
+    }
+}
+
+// Croes, Georges A. "A method for solving traveling-salesman problems." Operations research 6, no. 6 (1958): 791-812.
+void two_opt_for_individual(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.route_num; ++i) {
+        two_opt_for_single_route(individual.routes[i],  individual.node_num[i], individual.upper_cost, instance);
+    }
 }

@@ -29,6 +29,7 @@ public:
     ~Individual();
 
 
+    friend ostream& operator<<(ostream& os, const Individual& individual);
 };
 
 #endif //CEVRP_INDIVIDUAL_HPP
