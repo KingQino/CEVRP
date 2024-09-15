@@ -91,3 +91,21 @@ TEST_F(UtilsTest, TwoOptForIndividual) {
 
     EXPECT_EQ(ind->upper_cost, 385.2853879430639);
 }
+
+TEST_F(UtilsTest, TwoOptStarForIndividual) {
+    vector<vector<int>> routes = {
+            {0, 9, 7, 5, 2, 1, 6, 8, 0},
+            {0, 10, 3, 4, 11, 13, 0},
+            {0, 19, 21, 20, 17, 0},
+            {0, 12, 15, 18, 14, 16, 0}
+    };
+    vector<int> demand_sum = {5700, 5300, 6000, 5500};
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum);
+
+    double fit_prev = ind->upper_cost;
+    bool updated = two_opt_star_for_individual(*ind, *instance);
+    double fit_cur = ind->upper_cost;
+
+    EXPECT_LT(fit_cur, fit_prev);
+    EXPECT_TRUE(updated);
+}
