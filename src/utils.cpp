@@ -411,3 +411,159 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
     delete[] tempr2;
     return updated;
 }
+
+bool node_shift(int* route, int length, double& cost, Case& instance) {
+    if (length <= 4) return false;
+    double min_change = 0;
+    bool flag = false;
+    do
+    {
+        min_change = 0;
+        int mini = 0, minj = 0;
+        for (int i = 1; i < length - 1; i++) {
+            for (int j = 1; j < length - 1; j++) {
+                if (i < j) {
+                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j], route[j + 1]);
+                    double xx2 = instance.get_distance(route[i - 1], route[i + 1]) + instance.get_distance(route[j], route[i]) + instance.get_distance(route[i], route[j + 1]);
+                    double change = xx1 - xx2;
+                    if (fabs(change) < 0.00000001) change = 0;
+                    if (min_change < change) {
+                        min_change = change;
+                        mini = i;
+                        minj = j;
+                        flag = true;
+                    }
+                }
+                else if (i > j) {
+                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j - 1], route[j]);
+                    double xx2 = instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j]) + instance.get_distance(route[i - 1], route[i + 1]);
+                    double change = xx1 - xx2;
+                    if (fabs(change) < 0.00000001) change = 0;
+                    if (min_change < change) {
+                        min_change = change;
+                        mini = i;
+                        minj = j;
+                        flag = true;
+                    }
+                }
+            }
+        }
+        if (min_change > 0) {
+            moveItoJ(route, mini, minj);
+            cost -= min_change;
+        }
+    } while (min_change > 0);
+    return flag;
+}
+
+void moveItoJ(int* route, int a, int b) {
+    int x = route[a];
+    if (a < b) {
+        for (int i = a; i < b; i++) {
+            route[i] = route[i + 1];
+        }
+        route[b] = x;
+    }
+    else if (a > b) {
+        for (int i = a; i > b; i--) {
+            route[i] = route[i - 1];
+        }
+        route[b] = x;
+    }
+}
+
+void one_point_move_intra_route_for_individual(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.route_num; i++) {
+        node_shift(individual.routes[i], individual.node_num[i], individual.upper_cost, instance);
+    }
+}
+
+// node shift between two routes, inter-route operator for One Point move (i.e., customer insertion)
+// Toth, Paolo, and Daniele Vigo. "The granular tabu search and its application to the vehicle-routing problem." Informs Journal on computing 15, no. 4 (2003): 333-346.
+bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2,
+                                   double& cost, Case& instance) {
+    if (length1 < 3 || length2 < 3) return false;
+    double min_change = 0;
+    bool flag = false;
+    do
+    {
+        min_change = 0;
+        int mini = 0, minj = 0;
+        for (int i = 1; i < length1 - 1; i++) {
+            // vehicle capacity constraint check
+            if (loading2 + instance.get_customer_demand(route1[i]) > instance.maxC) {
+                continue; // not satisfy the vehicle capacity constraint
+            } else {
+                for (int j = 0; j < length2 - 1; j++) {
+                    double xx1 = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1]) + instance.get_distance(route2[j], route2[j + 1]);
+                    double xx2 = instance.get_distance(route1[i - 1], route1[i + 1]) + instance.get_distance(route2[j], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
+                    double change = xx1 - xx2;
+                    if (fabs(change) < 0.00000001) change = 0;
+                    if (min_change < change) {
+                        min_change = change;
+                        mini = i;
+                        minj = j;
+                        flag = true;
+                    }
+                }
+            }
+        }
+        if (min_change > 0) {
+            int x = route1[mini];
+            for (int i = mini; i < length1 - 1; i++) {
+                route1[i] = route1[i + 1];
+            }
+            length1--;
+            loading1 -= instance.get_customer_demand(x);
+            for (int j = length2; j > minj + 1; j--) {
+                route2[j] = route2[j - 1];
+            }
+            route2[minj + 1] = x;
+            length2++;
+            loading2 += instance.get_customer_demand(x);
+            cost -= min_change;
+        }
+    } while (min_change > 0);
+    return flag;
+}
+
+bool one_point_move_inter_route_for_individual(Individual& individual, Case& instance) {
+    if (individual.route_num == 1) {
+        return false;
+    }
+
+    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.route_num);
+
+    while (!route_pairs.empty())
+    {
+        int r1 = route_pairs.begin()->first;
+        int r2 = route_pairs.begin()->second;
+        route_pairs.erase(route_pairs.begin());
+        node_shift_between_two_routes(individual.routes[r1], individual.routes[r2], individual.node_num[r1], individual.node_num[r2],
+                                      individual.demand_sum[r1], individual.demand_sum[r2], individual.upper_cost, instance);
+    }
+
+    // iterate the variable "demand_sum" to remove the empty route, if the demand_sum is 0, then remove the route
+    for (int i = 0; i < individual.route_num; i++) {
+        if (individual.demand_sum[i] == 0) {
+            for (int j = i; j < individual.route_num - 1; j++) {
+                int* temp = individual.routes[j];
+                individual.routes[j] = individual.routes[j + 1];
+                individual.routes[j + 1] = temp;
+                individual.node_num[j] = individual.node_num[j + 1];
+                individual.demand_sum[j] = individual.demand_sum[j + 1];
+            }
+            individual.route_num--;
+            i--;
+        }
+    }
+
+    // update the variable "route_num" and "route_cap" to remove the empty route
+    for (size_t i = individual.route_num; i < individual.route_cap; ++i) {
+        individual.node_num[i] = 0;
+        individual.demand_sum[i] = 0;
+    }
+
+    return true;
+}
+

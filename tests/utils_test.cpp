@@ -109,3 +109,78 @@ TEST_F(UtilsTest, TwoOptStarForIndividual) {
     EXPECT_LT(fit_cur, fit_prev);
     EXPECT_TRUE(updated);
 }
+
+TEST_F(UtilsTest, OnePointMoveIntraRouteForIndividual) {
+    vector<vector<int>> routes = {
+            {0, 2, 1, 5, 7, 6, 9, 0},
+            {0, 8, 3, 4, 11, 10, 13, 0},
+            {0, 21, 19, 17, 20, 0},
+            {0, 14, 16, 12, 15, 18, 0}
+    };
+    vector<int> demand_sum = {5600, 5400, 6000, 5500};
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum);
+
+    double fit_prev = ind->upper_cost;
+    one_point_move_intra_route_for_individual(*ind, *instance);
+    double fit_cur = ind->upper_cost;
+
+    EXPECT_LT(fit_cur, fit_prev);
+}
+
+TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
+    // interesting node: 6, demand 400
+    int* route1 = new int[22]{0,10,8,6,3, 4,11,13,0}; //5800
+    int* route2 = new int[22]{0,1,2,5,7,9,0}; // 5200
+    int length1 = 9;
+    int length2 = 7;
+    int loading1 = 5800;
+    int loading2 = 5200;
+    double cost = 0;
+
+    node_shift_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, *instance);
+
+    // expect to obtain better routes, and they are {0,10,8,3,4,11,13,0} and {0,6,1,2,5,7,9,0}
+    // print route1 and route2
+    for (int i = 0; i < length1; ++i) {
+        cout << route1[i] << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < length2; ++i) {
+        cout << route2[i] << " ";
+    }
+    cout << endl;
+    // print length1 and length2
+    cout << "Length: " << length1 << " " << length2 << endl;
+    // check the loading
+    cout << "Loading: " << loading1 << " " << loading2 << endl;
+    // print the fitness value
+    cout << "Fitness value: " << cost << endl;
+
+
+    EXPECT_EQ(route2[1], 6);
+    EXPECT_EQ(length1, 8);
+    EXPECT_EQ(length2, 8);
+    EXPECT_EQ(loading1, 5400);
+    EXPECT_EQ(loading2, 5600);
+    EXPECT_LT(cost, 0);
+
+    delete[] route1;
+    delete[] route2;
+}
+
+TEST_F(UtilsTest, OnePointMoveInterRouteForIndividual) {
+    vector<vector<int>> routes = routes_constructor_with_split(*instance, rng);
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes,
+                                                               instance->compute_total_distance(routes),
+                                                               instance->compute_demand_sum(routes));
+    double cost_prev = ind->upper_cost;
+    int num_of_routes_prev = ind->route_num;
+
+    one_point_move_inter_route_for_individual(*ind, *instance);
+
+    double cost_cur = ind->upper_cost;
+    int num_of_routes_cur = ind->route_num;
+
+    EXPECT_LT(cost_cur, cost_prev);
+    EXPECT_LT(num_of_routes_cur, num_of_routes_prev);
+}
