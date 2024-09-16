@@ -567,3 +567,28 @@ bool one_point_move_inter_route_for_individual(Individual& individual, Case& ins
     return true;
 }
 
+// swap two nodes within a route
+void two_nodes_swap_for_single_route(int* route, int length, double& cost, Case& instance) {
+    // boundary check
+    if (length < 5) return;
+
+    // adjacent nodes do not swap
+    for(int i = 1; i < length - 3; i++) {
+        for(int j = i + 2; j < length - 1; j++) {
+            double old_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1])
+                              + instance.get_distance(route[j - 1], route[j]) + instance.get_distance(route[j], route[j + 1]);
+            double new_cost = instance.get_distance(route[i - 1], route[j]) + instance.get_distance(route[j], route[i + 1])
+                              + instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j + 1]);
+            if (new_cost < old_cost) {
+                swap(route[i], route[j]);
+                cost -= old_cost - new_cost;
+            }
+        }
+    }
+}
+
+void two_point_move_intra_route_for_individual(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.route_num; i++) {
+        two_nodes_swap_for_single_route(individual.routes[i], individual.node_num[i], individual.upper_cost, instance);
+    }
+}

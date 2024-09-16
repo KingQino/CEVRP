@@ -14,6 +14,11 @@ protected:
         string fileName = "E-n22-k4.evrp";
         instance = new Case(1, fileName);
         rng = std::default_random_engine(0);;
+
+        vector<vector<int>> routes = routes_constructor_with_hien_method(*instance, rng);
+        individual = std::make_unique<Individual>(8, 22, routes,
+                                           instance->compute_total_distance(routes),
+                                           instance->compute_demand_sum(routes));
     }
 
     void TearDown() override {
@@ -22,6 +27,7 @@ protected:
 
     Case* instance{};
     std::default_random_engine rng;
+    unique_ptr<Individual> individual;
 };
 
 
@@ -70,11 +76,11 @@ TEST_F(UtilsTest, RoutesConstructor) {
     vector<vector<int>> routes_z = routes_constructor_with_direct_encoding(*instance, rng);
 
     EXPECT_EQ(routes_x[0][0], 0);
-    EXPECT_EQ(routes_x[-1][-1], 0);
+    EXPECT_NE(routes_x[0][1], 0);
     EXPECT_EQ(routes_y[0][0], 0);
-    EXPECT_EQ(routes_y[-1][-1], 0);
+    EXPECT_NE(routes_y[0][1], 0);
     EXPECT_EQ(routes_z[0][0], 0);
-    EXPECT_EQ(routes_z[-1][-1], 0);
+    EXPECT_NE(routes_z[0][1], 0);
 }
 
 TEST_F(UtilsTest, TwoOptForIndividual) {
@@ -141,20 +147,20 @@ TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
 
     // expect to obtain better routes, and they are {0,10,8,3,4,11,13,0} and {0,6,1,2,5,7,9,0}
     // print route1 and route2
-    for (int i = 0; i < length1; ++i) {
-        cout << route1[i] << " ";
-    }
-    cout << endl;
-    for (int i = 0; i < length2; ++i) {
-        cout << route2[i] << " ";
-    }
-    cout << endl;
-    // print length1 and length2
-    cout << "Length: " << length1 << " " << length2 << endl;
-    // check the loading
-    cout << "Loading: " << loading1 << " " << loading2 << endl;
-    // print the fitness value
-    cout << "Fitness value: " << cost << endl;
+//    for (int i = 0; i < length1; ++i) {
+//        cout << route1[i] << " ";
+//    }
+//    cout << endl;
+//    for (int i = 0; i < length2; ++i) {
+//        cout << route2[i] << " ";
+//    }
+//    cout << endl;
+//    // print length1 and length2
+//    cout << "Length: " << length1 << " " << length2 << endl;
+//    // check the loading
+//    cout << "Loading: " << loading1 << " " << loading2 << endl;
+//    // print the fitness value
+//    cout << "Fitness value: " << cost << endl;
 
 
     EXPECT_EQ(route2[1], 6);
@@ -183,4 +189,28 @@ TEST_F(UtilsTest, OnePointMoveInterRouteForIndividual) {
 
     EXPECT_LT(cost_cur, cost_prev);
     EXPECT_LT(num_of_routes_cur, num_of_routes_prev);
+}
+
+TEST_F(UtilsTest, TwoPointMoveIntraRouteForIndividual) {
+    // expected to obtain a better route, and it is {0, 10, 8, 3, 4, 11, 13, 0}
+    int* route = new int[22]{0,3,8,13,4,11,10,0};
+    int length = 8;
+    double cost = instance->compute_total_distance({0,3,8,13,4,11,10,0});
+    double cost_prev = cost;
+
+    two_nodes_swap_for_single_route(route, length, cost, *instance);
+
+    EXPECT_LT(cost, cost_prev);
+
+    delete[] route;
+
+
+    double fit_prev = individual->upper_cost;
+    two_point_move_intra_route_for_individual(*individual, *instance);
+    double fit_cur = individual->upper_cost;
+
+    double fit_eval = instance->compute_total_distance(individual->routes, individual->route_num, individual->node_num);
+
+    EXPECT_LT(fit_cur, fit_prev);
+    EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
 }

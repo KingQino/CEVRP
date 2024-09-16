@@ -244,6 +244,19 @@ double Case::get_evals() const {
     return evals;
 }
 
+double Case::compute_total_distance(int** routes, int num_routes, const int* num_nodes_per_route) {
+    double tour_length = 0.0;
+    for (int i = 0; i < num_routes; ++i) {
+        for (int j = 0; j < num_nodes_per_route[i] - 1; ++j) {
+            tour_length += distances[routes[i][j]][routes[i][j + 1]];
+        }
+    }
+
+    evals++;
+
+    return tour_length;
+}
+
 double Case::compute_total_distance(const vector<vector<int>> &routes) {
     double tour_length = 0.0;
     for (auto& route : routes) {
@@ -253,6 +266,15 @@ double Case::compute_total_distance(const vector<vector<int>> &routes) {
     }
 
     evals++;
+
+    return tour_length;
+}
+
+double Case::compute_total_distance(const vector<int> &route) const {
+    double tour_length = 0.0;
+    for (int j = 0; j < route.size() - 1; ++j) {
+        tour_length += distances[route[j]][route[j + 1]];
+    }
 
     return tour_length;
 }
