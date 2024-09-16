@@ -50,6 +50,8 @@ bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& 
 bool one_point_move_inter_route_for_individual(Individual& individual, Case& instance); // three-arcs exchange, inter-route (One-point move inter-route)
 void two_nodes_swap_for_single_route(int* route, int length, double& cost, Case& instance);
 void two_point_move_intra_route_for_individual(Individual& individual, Case& instance); // four-arcs exchange, intra-route
+bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2, double& cost, Case& instance);
+
 
 
 

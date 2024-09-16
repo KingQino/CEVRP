@@ -214,3 +214,27 @@ TEST_F(UtilsTest, TwoPointMoveIntraRouteForIndividual) {
     EXPECT_LT(fit_cur, fit_prev);
     EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
 }
+
+TEST_F(UtilsTest, TwoNodesSwapBetweenTwoRoutes) {
+    int* route1 = new int[22]{0,8,3,4,11,13,6, 0};
+    int* route2 = new int[22]{0,10, 1,2,5,7,9,0};
+    int length1 = 8;
+    int length2 = 8;
+    int loading1 = 5400;
+    int loading2 = 5600;
+    double fitv = instance->compute_total_distance({0,8,3,4,11,13,6,0}) + instance->compute_total_distance({0,10,1,2,5,7,9,0});
+    double fit_prev = fitv;
+    int loading1_prev = loading1;
+    int loading2_prev = loading2;
+
+    bool updated = two_nodes_swap_between_two_routes(route1, route2, length1, length2, loading1, loading2, fitv, *instance);
+
+    EXPECT_TRUE(updated);
+    EXPECT_EQ(route2[1], 6);
+    EXPECT_LT(fitv, fit_prev);
+    EXPECT_NE(loading1, loading1_prev);
+    EXPECT_EQ(loading1_prev + loading2_prev, loading1 + loading2);
+
+    delete[] route1;
+    delete[] route2;
+}

@@ -592,3 +592,32 @@ void two_point_move_intra_route_for_individual(Individual& individual, Case& ins
         two_nodes_swap_for_single_route(individual.routes[i], individual.node_num[i], individual.upper_cost, instance);
     }
 }
+
+// swap two nodes between two routes
+bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2,
+                                       double& cost, Case& instance) {
+    // boundary check
+    if (length1 < 3 || length2 < 3) return false;
+
+    // vehicle capacity constraint check and fitness improvement check
+    for (int i = 1; i < length1 - 1; i++) {
+        for (int j = 1; j < length2 - 1; j++) {
+            int demandI = instance.get_customer_demand(route1[i]);
+            int demandJ = instance.get_customer_demand(route2[j]);
+            if (loading1 - demandI + demandJ <= instance.maxC && loading2 - demandJ + demandI <= instance.maxC) {
+                double old_cost = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1])
+                                 + instance.get_distance(route2[j - 1], route2[j]) + instance.get_distance(route2[j], route2[j + 1]);
+                double new_cost = instance.get_distance(route1[i - 1], route2[j]) + instance.get_distance(route2[j], route1[i + 1])
+                                 + instance.get_distance(route2[j - 1], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
+                if (new_cost < old_cost) {
+                    swap(route1[i], route2[j]);
+                    loading1 = loading1 - demandI + demandJ;
+                    loading2 = loading2 - demandJ + demandI;
+                    cost -= old_cost - new_cost;
+                }
+            }
+        }
+    }
+
+    return true;
+}
