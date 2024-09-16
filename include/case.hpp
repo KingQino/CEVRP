@@ -41,11 +41,12 @@ public:
     [[nodiscard]] int get_customer_demand(int customer) const;				//returns the customer demand
     [[nodiscard]] double get_distance(int from, int to);				//returns the distance
     [[nodiscard]] double get_evals() const;									//returns the number of evaluations
+    [[nodiscard]] bool is_charging_station(int node) const;					//returns true if node is a charging station
     [[nodiscard]] double compute_total_distance(int** routes, int num_routes, const int* num_nodes_per_route);
     [[nodiscard]] double compute_total_distance(const vector<vector<int>>& routes); // customized fitness function
     [[nodiscard]] double compute_total_distance(const vector<int>& route) const;
     [[nodiscard]] vector<int> compute_demand_sum(const vector<vector<int>>& routes) const; // compute the demand sum of all customers for each route.
-    [[nodiscard]] bool is_charging_station(int node) const;					//returns true if node is a charging station
+    void compute_demand_sum(int** routes, int num_routes, const int* num_nodes_per_route, int* demand_sum) const; // must be with "int* demand_sum assign 0"
 
 
     int id;

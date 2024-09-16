@@ -292,6 +292,16 @@ vector<int> Case::compute_demand_sum(const vector<vector<int>> &routes) const {
     return demand_sum;
 }
 
+void Case::compute_demand_sum(int** routes, int num_routes, const int* num_nodes_per_route, int* demand_sum) const {
+    for (int i = 0; i < num_routes; ++i) {
+        int temp = 0;
+        for (int j = 0; j < num_nodes_per_route[i]; ++j) {
+            temp += get_customer_demand(routes[i][j]);
+        }
+        demand_sum[i] = temp;
+    }
+}
+
 bool Case::is_charging_station(int node) const {
 
     bool flag;
