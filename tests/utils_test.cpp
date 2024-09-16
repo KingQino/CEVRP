@@ -238,3 +238,19 @@ TEST_F(UtilsTest, TwoNodesSwapBetweenTwoRoutes) {
     delete[] route1;
     delete[] route2;
 }
+
+TEST_F(UtilsTest, TwoPointMoveInterRouteForIndividual) {
+    double fit_prev = individual->upper_cost;
+    two_point_move_inter_route_for_individual(*individual, *instance);
+    double fit_cur = individual->upper_cost;
+
+    double fit_eval = instance->compute_total_distance(individual->routes, individual->route_num, individual->node_num);
+    int loadingSum = 0;
+    for (int i = 0; i < individual->route_num; ++i) {
+        loadingSum += individual->demand_sum[i];
+    }
+
+    EXPECT_LT(fit_cur, fit_prev);
+    EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
+    EXPECT_EQ(loadingSum, 22'500);
+}

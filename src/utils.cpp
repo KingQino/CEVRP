@@ -621,3 +621,23 @@ bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, in
 
     return true;
 }
+
+bool two_point_move_inter_route_for_individual(Individual& individual, Case& instance) {
+    if (individual.route_num == 1) {
+        return false;
+    }
+
+    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.route_num);
+
+    while (!route_pairs.empty())
+    {
+        int r1 = route_pairs.begin()->first;
+        int r2 = route_pairs.begin()->second;
+        route_pairs.erase(route_pairs.begin());
+        two_nodes_swap_between_two_routes(individual.routes[r1], individual.routes[r2], individual.node_num[r1], individual.node_num[r2],
+                                          individual.demand_sum[r1], individual.demand_sum[r2], individual.upper_cost, instance);
+    }
+
+    return true;
+}
+
