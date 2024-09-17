@@ -279,26 +279,26 @@ double Case::compute_total_distance(const vector<int> &route) const {
     return tour_length;
 }
 
-vector<int> Case::compute_demand_sum(const vector<vector<int>> &routes) const {
-    vector<int> demand_sum;
+vector<int> Case::compute_demand_sum_per_route(const vector<vector<int>> &routes) const {
+    vector<int> demand_sum_per_route;
     for (auto & route : routes) {
         int temp = 0;
         for (int node : route) {
             temp += get_customer_demand(node);
         }
-        demand_sum.push_back(temp);
+        demand_sum_per_route.push_back(temp);
     }
 
-    return demand_sum;
+    return demand_sum_per_route;
 }
 
-void Case::compute_demand_sum(int** routes, int num_routes, const int* num_nodes_per_route, int* demand_sum) const {
+void Case::compute_demand_sum_per_route(int** routes, int num_routes, const int* num_nodes_per_route, int* demand_sum_per_route) const {
     for (int i = 0; i < num_routes; ++i) {
         int temp = 0;
         for (int j = 0; j < num_nodes_per_route[i]; ++j) {
             temp += get_customer_demand(routes[i][j]);
         }
-        demand_sum[i] = temp;
+        demand_sum_per_route[i] = temp;
     }
 }
 

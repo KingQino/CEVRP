@@ -16,16 +16,16 @@ public:
     int route_cap; // route capacity - 3 by MIN_VEHICLES
     int node_cap; // node capacity - NUM_OF_CUSTOMERS + num_of_depot
     int** routes;
-    int route_num; // the actual number of routes for the solution
-    int* node_num; // the node number of each route
-    int* demand_sum; // the demand sum of all customers of each route
+    int num_routes; // the actual number of routes for the solution
+    int* num_nodes_per_route; // the node number of each route
+    int* demand_sum_per_route; // the demand sum of all customers of each route
     double upper_cost;
     double lower_cost;
 
 
     Individual(const Individual  &ind);
     Individual(int route_cap, int node_cap);
-    Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum);
+    Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route);
     ~Individual();
 
     void set_lower_cost(double lower_cost_);

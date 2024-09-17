@@ -60,10 +60,10 @@ TEST_F(CaseTest, TotalDistanceAndDemandSum) {
     };
 
     double total_distance = instance->compute_total_distance(routes);
-    vector<int> demand_sum = instance->compute_demand_sum(routes);
+    vector<int> demand_sum_per_route = instance->compute_demand_sum_per_route(routes);
 
-    vector<int> truth_demand_sum = {6000, 5500, 5900, 5100};
+    vector<int> truth_demand_sum_per_route = {6000, 5500, 5900, 5100};
 
     ASSERT_EQ(total_distance, 553.4851515212215);
-    ASSERT_EQ(demand_sum, truth_demand_sum);
+    ASSERT_EQ(demand_sum_per_route, truth_demand_sum_per_route);
 }

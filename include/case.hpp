@@ -45,8 +45,8 @@ public:
     [[nodiscard]] double compute_total_distance(int** routes, int num_routes, const int* num_nodes_per_route);
     [[nodiscard]] double compute_total_distance(const vector<vector<int>>& routes); // customized fitness function
     [[nodiscard]] double compute_total_distance(const vector<int>& route) const;
-    [[nodiscard]] vector<int> compute_demand_sum(const vector<vector<int>>& routes) const; // compute the demand sum of all customers for each route.
-    void compute_demand_sum(int** routes, int num_routes, const int* num_nodes_per_route, int* demand_sum) const; // must be with "int* demand_sum assign 0"
+    [[nodiscard]] vector<int> compute_demand_sum_per_route(const vector<vector<int>>& routes) const; // compute the demand sum of all customers for each route.
+    void compute_demand_sum_per_route(int** routes, int num_routes, const int* num_nodes_per_route, int* demand_sum_per_route) const; // must be with "int* demand_sum_per_route assign 0"
 
 
     int id;
