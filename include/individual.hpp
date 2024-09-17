@@ -15,11 +15,17 @@ class Individual {
 public:
     int route_cap; // route capacity - 3 by MIN_VEHICLES
     int node_cap; // node capacity - NUM_OF_CUSTOMERS + num_of_depot
+
+    // upper-level solution for CVRP
     int** routes;
     int num_routes; // the actual number of routes for the solution
     int* num_nodes_per_route; // the node number of each route
     int* demand_sum_per_route; // the demand sum of all customers of each route
     double upper_cost;
+
+    // lower-level solution for CEVRP, `num_routes` and `demand_sum_per_route` are the same as the upper-level solution
+    int** lower_routes;
+    int*  lower_num_nodes_per_route;
     double lower_cost;
 
 
@@ -28,6 +34,7 @@ public:
     Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route);
     ~Individual();
 
+    void start_lower_solution();
     void set_lower_cost(double lower_cost_);
     void set_routes(const vector<vector<int>>& routes_);
 

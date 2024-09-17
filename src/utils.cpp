@@ -641,6 +641,10 @@ bool two_point_move_inter_route_for_individual(Individual& individual, Case& ins
     return true;
 }
 
+/****************************************************************/
+/*                   Recharging Optimization                    */
+/****************************************************************/
+
 double fix_one_solution(Individual &individual, Case& instance) {
     double updated_fit = 0;
     vector<vector<int>> repaired_routes;
