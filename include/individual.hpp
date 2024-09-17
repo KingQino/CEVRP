@@ -28,6 +28,8 @@ public:
     Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum);
     ~Individual();
 
+    void set_lower_cost(double lower_cost_);
+    void set_routes(const vector<vector<int>>& routes_);
 
     friend ostream& operator<<(ostream& os, const Individual& individual);
 };

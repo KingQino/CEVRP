@@ -12,6 +12,7 @@
 #include <numeric>
 #include <memory>
 #include <unordered_set>
+#include <list>
 
 #include "case.hpp"
 #include "individual.hpp"
@@ -53,7 +54,15 @@ void two_point_move_intra_route_for_individual(Individual& individual, Case& ins
 bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2, double& cost, Case& instance);
 bool two_point_move_inter_route_for_individual(Individual& individual, Case& instance); // four-arcs exchange, inter-route
 
+// neighbors expanding: expand the numbers of promising upper-level solution by exploiting the neighborhood => good at handle coupling issues
 
+
+// lower-level optimisation: make recharging decision => minimise the lower cost
+// i.e., insert the optimal/near-optimal charging stations into the route
+double fix_one_solution(Individual& individual, Case& instance);
+pair<double, vector<int>> insert_station_by_simple_enumeration_array(int* route, int length, Case& instance);
+pair<double, vector<int>> insert_station_by_remove_array(int* route, int length, Case& instance);
+void tryACertainNArray(int mlen, int nlen, int* chosenPos, int* bestChosenPos, double& finalfit, int curub, int* route, int length, vector<double>& accumulateDis, Case& instance);
 
 
 

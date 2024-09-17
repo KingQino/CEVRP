@@ -254,3 +254,23 @@ TEST_F(UtilsTest, TwoPointMoveInterRouteForIndividual) {
     EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
     EXPECT_EQ(loadingSum, 22'500);
 }
+
+TEST_F(UtilsTest, FixOneSolution) {
+    vector<vector<int>> routes = {
+            {0, 8, 15, 20, 21, 16, 0},
+            {0, 14, 18, 9, 5, 7, 10, 0},
+            {0, 4, 13, 0},
+            {0, 17, 12, 6, 1, 3, 11, 0},
+            {0, 19, 2, 0}
+    };
+    vector<int> demand_sum = {5600, 5200, 2700, 5800, 3200};
+    unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, 678.8177686900328, demand_sum);
+
+//    cout << *ind << endl;
+    double fixed_fit = fix_one_solution(*ind, *instance);
+//    cout << *ind << endl;
+
+
+    EXPECT_EQ(fixed_fit, 685.4783939004661);
+//    ASSERT_EQ(ind->steps,  35);
+}

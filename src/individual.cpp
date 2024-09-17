@@ -63,6 +63,20 @@ Individual::~Individual() {
     delete[] this->demand_sum;
 }
 
+void Individual::set_lower_cost(double lower_cost_) {
+    this->lower_cost = lower_cost_;
+}
+
+void Individual::set_routes(const vector<vector<int>>& routes_) {
+    this->route_num = static_cast<int>(routes_.size());
+    for (int i = 0; i < this->route_num; ++i) {
+        this->node_num[i] = static_cast<int>(routes_[i].size());
+        for (int j = 0; j < this->node_num[i]; ++j) {
+            this->routes[i][j] = routes_[i][j];
+        }
+    }
+}
+
 std::ostream& operator<<(std::ostream& os, const Individual& individual) {
     os << "Route Capacity: " << individual.route_cap << "\n";
     os << "Node Capacity: " << individual.node_cap << "\n";
