@@ -34,9 +34,10 @@ public:
     Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route);
     ~Individual();
 
-    void start_lower_solution();
+    void start_lower_solution(); // no use so far
     void set_lower_cost(double lower_cost_);
-    void set_routes(const vector<vector<int>>& routes_);
+    void set_lower_routes(const vector<vector<int>>& lower_routes_);
+    void set_routes(const vector<vector<int>>& routes_); // no use so far
 
     friend ostream& operator<<(ostream& os, const Individual& individual);
 };

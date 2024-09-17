@@ -87,6 +87,15 @@ void Individual::set_lower_cost(double lower_cost_) {
     this->lower_cost = lower_cost_;
 }
 
+void Individual::set_lower_routes(const vector<vector<int>> &lower_routes_) {
+    for (int i = 0; i < static_cast<int>(lower_routes_.size()); ++i) {
+        this->lower_num_nodes_per_route[i] = static_cast<int>(lower_routes_[i].size());
+        for (int j = 0; j < this->lower_num_nodes_per_route[i]; ++j) {
+            this->lower_routes[i][j] = lower_routes_[i][j];
+        }
+    }
+}
+
 void Individual::set_routes(const vector<vector<int>>& routes_) {
     this->num_routes = static_cast<int>(routes_.size());
     for (int i = 0; i < this->num_routes; ++i) {

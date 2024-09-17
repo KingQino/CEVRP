@@ -671,10 +671,9 @@ double fix_one_solution(Individual &individual, Case& instance) {
         }
     }
     individual.set_lower_cost(updated_fit);
-    // TODO: update the lower solution
-//    if (isFeasible) {
-//        individual.set_tour(repaired_routes);
-//    }
+    if (isFeasible) {
+        individual.set_lower_routes(repaired_routes);
+    }
     return updated_fit;
 }
 
