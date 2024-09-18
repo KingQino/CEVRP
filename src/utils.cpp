@@ -480,8 +480,7 @@ void one_point_move_intra_route_for_individual(Individual& individual, Case& ins
 
 // node shift between two routes, inter-route operator for One Point move (i.e., customer insertion)
 // Toth, Paolo, and Daniele Vigo. "The granular tabu search and its application to the vehicle-routing problem." Informs Journal on computing 15, no. 4 (2003): 333-346.
-bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2,
-                                   double& cost, Case& instance) {
+bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, Case& instance) {
     if (length1 < 3 || length2 < 3) return false;
     double min_change = 0;
     bool flag = false;
@@ -594,8 +593,7 @@ void two_point_move_intra_route_for_individual(Individual& individual, Case& ins
 }
 
 // swap two nodes between two routes
-bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2,
-                                       double& cost, Case& instance) {
+bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2, double& cost, Case& instance) {
     // boundary check
     if (length1 < 3 || length2 < 3) return false;
 
