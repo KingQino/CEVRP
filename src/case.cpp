@@ -257,6 +257,15 @@ double Case::compute_total_distance(int** routes, int num_routes, const int* num
     return tour_length;
 }
 
+double Case::compute_total_distance(const int* route, int length) const {
+    double tour_length = 0.0;
+    for (int j = 0; j < length - 1; ++j) {
+        tour_length += distances[route[j]][route[j + 1]];
+    }
+
+    return tour_length;
+}
+
 double Case::compute_total_distance(const vector<vector<int>> &routes) {
     double tour_length = 0.0;
     for (auto& route : routes) {

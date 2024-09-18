@@ -272,3 +272,105 @@ TEST_F(UtilsTest, FixOneSolution) {
     EXPECT_EQ(fixed_fit, 685.4783939004661);
     EXPECT_EQ(num_nodes,  39);
 }
+
+TEST_F(UtilsTest, InsertStationBySimpleEnumerationArray) {
+    //  0 9 7 5 2 1 29 6 8 0 10 25 3 4 11 13 0 22 19 21 20 17 0 12 15 18 14 16 0
+    // {0,9,7,5,2,1,29,6,8,0}
+    // {0,10,25,3,4,11,13,0}
+    // {0,22,19,21,20,17,0}
+    // {0,12,15,18,14,16,0}
+    vector<vector<int>> routes = {
+            {0, 9, 7, 5, 2, 1, 6, 8, 0},
+            {0, 10, 3, 4, 11, 13, 0},
+            {0, 19, 21, 20, 17, 0},
+            {0, 12, 15, 18, 14, 16, 0}
+    };
+
+    for (auto& r : routes) {
+        int* route = new int [instance->customerNumber + instance->depotNumber];
+        memcpy(route, r.data(), r.size() * sizeof(int));
+        int length = static_cast<int>(r.size());
+        double original_cost = instance->compute_total_distance(route, length);
+
+        // print the original route
+//        cout << "Original Route: ";
+//        for (int i = 0; i < length; ++i) {
+//            cout << route[i] << " ";
+//        }
+//        cout << endl;
+//        cout << "Original Length: " << length << endl;
+//        cout << "Original Cost: " << original_cost << endl;
+
+        int* repaired_route = new int[instance->customerNumber + instance->depotNumber];
+        memcpy(repaired_route, route, length * sizeof(int));
+        int repaired_length = length;
+        double repaired_cost = insert_station_by_simple_enumeration_array(route, length, repaired_route, repaired_length, *instance);
+
+        // print the repaired route
+//        cout << "Repaired Route: ";
+//        for (int i = 0; i < repaired_length; ++i) {
+//            cout << repaired_route[i] << " ";
+//        }
+//        cout << endl;
+//        cout << "Repaired Length: " << repaired_length << endl;
+//        cout << "Repaired Cost: " << repaired_cost << endl;
+//        cout << endl;
+
+        EXPECT_GE(repaired_cost, original_cost);
+        EXPECT_GE(repaired_length, length);
+        delete[] route;
+        delete[] repaired_route;
+    }
+}
+
+
+//insert_station_by_remove_array
+TEST_F(UtilsTest, InsertStationByRemoveArray) {
+    //  0 9 7 5 2 1 29 6 8 0 10 25 3 4 11 13 0 22 19 21 20 17 0 12 15 18 14 16 0
+    // {0,9,7,5,2,1,29,6,8,0}
+    // {0,10,25,3,4,11,13,0}
+    // {0,22,19,21,20,17,0}
+    // {0,12,15,18,14,16,0}
+    vector<vector<int>> routes = {
+            {0, 9, 7, 5, 2, 1, 6, 8, 0},
+            {0, 10, 3, 4, 11, 13, 0},
+            {0, 19, 21, 20, 17, 0},
+            {0, 12, 15, 18, 14, 16, 0}
+    };
+
+    for (auto& r : routes) {
+        int *route = new int[instance->customerNumber + instance->depotNumber];
+        memcpy(route, r.data(), r.size() * sizeof(int));
+        int length = static_cast<int>(r.size());
+        double original_cost = instance->compute_total_distance(route, length);
+
+        // print the original route
+//        cout << "Original Route: ";
+//        for (int i = 0; i < length; ++i) {
+//            cout << route[i] << " ";
+//        }
+//        cout << endl;
+//        cout << "Original Length: " << length << endl;
+//        cout << "Original Cost: " << original_cost << endl;
+
+        int *repaired_route = new int[instance->customerNumber + instance->depotNumber];
+        memcpy(repaired_route, route, length * sizeof(int));
+        int repaired_length = length;
+        double repaired_cost = insert_station_by_remove_array(route, length, repaired_route, repaired_length, *instance);
+
+        // print the repaired route
+//        cout << "Repaired Route: ";
+//        for (int i = 0; i < repaired_length; ++i) {
+//            cout << repaired_route[i] << " ";
+//        }
+//        cout << endl;
+//        cout << "Repaired Length: " << repaired_length << endl;
+//        cout << "Repaired Cost: " << repaired_cost << endl;
+//        cout << endl;
+
+        EXPECT_GE(repaired_cost, original_cost);
+        EXPECT_GE(repaired_length, length);
+        delete[] route;
+        delete[] repaired_route;
+    }
+}

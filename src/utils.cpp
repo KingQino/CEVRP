@@ -646,90 +646,83 @@ bool two_point_move_inter_route_for_individual(Individual& individual, Case& ins
 /****************************************************************/
 
 double fix_one_solution(Individual &individual, Case& instance) {
-    double updated_fit = 0;
-    vector<vector<int>> repaired_routes;
-    bool isFeasible = true;
-    for (int i = 0; i < individual.num_routes; i++) {
-        pair<double, vector<int>> res_xx = insert_station_by_simple_enumeration_array(individual.routes[i], individual.num_nodes_per_route[i], instance);
-        double xx = res_xx.first;
+    double lower_cost = 0.0;
 
-        if (xx == -1) {
-            pair<double, vector<int>> res_yy = insert_station_by_remove_array(individual.routes[i], individual.num_nodes_per_route[i], instance);
-            double yy = res_yy.first;
-            if (yy == -1) {
-                updated_fit += INFEASIBLE;
-                isFeasible = false;
+    individual.start_lower_solution();
+    for (int i = 0; i < individual.num_routes; ++i) {
+        double cost_SE = insert_station_by_simple_enumeration_array(individual.routes[i], individual.num_nodes_per_route[i], individual.lower_routes[i], individual.lower_num_nodes_per_route[i], instance);
+
+        if (cost_SE == -1) {
+            double cost_RE = insert_station_by_remove_array(individual.routes[i], individual.num_nodes_per_route[i], individual.lower_routes[i], individual.lower_num_nodes_per_route[i], instance);
+            if (cost_RE == -1) {
+                lower_cost += INFEASIBLE;
+            } else {
+                lower_cost += cost_RE;
             }
-            else {
-                updated_fit += yy;
-                repaired_routes.push_back(res_yy.second);
-            }
+        } else {
+            lower_cost += cost_SE;
         }
-        else {
-            updated_fit += xx;
-            repaired_routes.push_back(res_xx.second);
-        }
+
     }
-    individual.set_lower_cost(updated_fit);
-    if (isFeasible) {
-        individual.set_lower_routes(repaired_routes);
-    }
-    return updated_fit;
+
+    individual.set_lower_cost(lower_cost);
+    return lower_cost;
 }
 
-pair<double, vector<int>> insert_station_by_simple_enumeration_array(int *route, int length, Case& instance) {
-    vector<int> full_route;
+double insert_station_by_simple_enumeration_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
     vector<double> accumulateDistance(length, 0);
     for (int i = 1; i < length; i++) {
         accumulateDistance[i] = accumulateDistance[i - 1] + instance.get_distance(route[i], route[i - 1]);
     }
     if (accumulateDistance.back() <= instance.maxDis) {
-        for (int i = 0; i < length; ++i) {
-            full_route.push_back(route[i]);
-        }
-        return make_pair(accumulateDistance.back(), full_route);
+        return accumulateDistance.back();
     }
 
     int ub = (int)(accumulateDistance.back() / instance.maxDis + 1);
     int lb = (int)(accumulateDistance.back() / instance.maxDis);
     int* chosenPos = new int[length];
     int* bestChosenPos = new int[length]; // customized variable
-    double final_fit = numeric_limits<double>::max();
-    double bestfit = final_fit; // customized variable
+    double final_cost = numeric_limits<double>::max();
+    double best_cost = final_cost; // customized variable
     for (int i = lb; i <= ub; i++) {
-        tryACertainNArray(0, i, chosenPos, bestChosenPos, final_fit, i, route, length, accumulateDistance, instance);
+        tryACertainNArray(0, i, chosenPos, bestChosenPos, final_cost, i, route, length, accumulateDistance, instance);
 
-        if (final_fit < bestfit) {
-            full_route.clear();
+        if (final_cost < best_cost) {
+            memset(repaired_route, 0, sizeof(int) * repaired_length);
+            int currentIndex = 0;
             int idx = 0;
             for (int j = 0; j < i; ++j) {
                 int from = route[bestChosenPos[j]];
                 int to = route[bestChosenPos[j] + 1];
                 int station = instance.bestStation[from][to];
 
-                full_route.insert(full_route.end(), route + idx, route + bestChosenPos[j] + 1);
-                full_route.push_back(station);
+                int numElementsToCopy = bestChosenPos[j] + 1 - idx;
+                memcpy(&repaired_route[currentIndex], &route[idx], numElementsToCopy * sizeof(int));
 
+                currentIndex += numElementsToCopy;
+
+                repaired_route[currentIndex++] = station;
                 idx = bestChosenPos[j] + 1;
             }
-            full_route.insert(full_route.end(), route + idx, route + length);
-            bestfit = final_fit;
-        }
 
+            int remainingElementsToCopy = length - idx;
+            memcpy(&repaired_route[currentIndex], &route[idx], remainingElementsToCopy * sizeof(int));
+            repaired_length = currentIndex + remainingElementsToCopy;
+
+            best_cost = final_cost;
+        }
     }
     delete[] chosenPos;
     delete[] bestChosenPos;
-    if (final_fit !=  numeric_limits<double>::max()) {
-        return make_pair(final_fit, full_route);
+    if (final_cost !=  numeric_limits<double>::max()) {
+        return final_cost;
     }
     else {
-        return make_pair(-1, full_route);
+        return -1;
     }
 }
 
-pair<double, vector<int>> insert_station_by_remove_array(int *route, int length, Case& instance) {
-    vector<int> full_route;
-
+double insert_station_by_remove_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
     list<pair<int, int>> stationInserted;
     for (int i = 0; i < length - 1; i++) {
         double allowedDis = instance.maxDis;
@@ -737,7 +730,7 @@ pair<double, vector<int>> insert_station_by_remove_array(int *route, int length,
             allowedDis = instance.maxDis - instance.get_distance(stationInserted.back().second, route[i]);
         }
         int onestation = instance.get_best_and_feasible_station(route[i], route[i + 1], allowedDis);
-        if (onestation == -1) return make_pair(-1, full_route);
+        if (onestation == -1) return -1;
         stationInserted.emplace_back(i, onestation);
     }
     while (!stationInserted.empty())
@@ -830,6 +823,7 @@ pair<double, vector<int>> insert_station_by_remove_array(int *route, int length,
     for (int i = 0; i < length - 1; i++) {
         sum += instance.get_distance(route[i], route[i + 1]);
     }
+    int currentIndex = 0;
     int idx = 0;
     for (auto& e : stationInserted) {
         int pos = e.first;
@@ -837,12 +831,20 @@ pair<double, vector<int>> insert_station_by_remove_array(int *route, int length,
         sum -= instance.get_distance(route[pos], route[pos + 1]);
         sum += instance.get_distance(route[pos], stat);
         sum += instance.get_distance(stat, route[pos + 1]);
-        full_route.insert(full_route.end(), route + idx, route + pos + 1);
-        full_route.push_back(stat);
+
+        int numElementsToCopy = pos + 1 - idx;
+        memcpy(&repaired_route[currentIndex], &route[idx], numElementsToCopy * sizeof(int));
+        currentIndex += numElementsToCopy;
+
+        repaired_route[currentIndex++] = stat;
+
         idx = pos + 1;
     }
-    full_route.insert(full_route.end(), route + idx, route + length);
-    return make_pair(sum, full_route);
+    int remainingElementsToCopy = length - idx;
+    memcpy(&repaired_route[currentIndex], &route[idx], remainingElementsToCopy * sizeof(int));
+    repaired_length = currentIndex + remainingElementsToCopy;
+
+    return sum;
 }
 
 void tryACertainNArray(int mlen, int nlen, int* chosenPos, int* bestChosenPos, double& finalfit, int curub, int* route, int length, vector<double>& accumulateDis, Case& instance) {
