@@ -20,10 +20,10 @@ public:
     int** routes;
     int num_routes; // the actual number of routes for the solution
     int* num_nodes_per_route; // the node number of each route
-    int* demand_sum_per_route; // the demand sum of all customers of each route
+    int* demand__sum_per_route; // the demand_ sum of all customers_ of each route
     double upper_cost;
 
-    // lower-level solution for CEVRP, `num_routes` and `demand_sum_per_route` are the same as the upper-level solution
+    // lower-level solution for CEVRP, `num_routes` and `demand__sum_per_route` are the same as the upper-level solution
     int** lower_routes;
     int*  lower_num_nodes_per_route;
     double lower_cost;
@@ -31,13 +31,13 @@ public:
 
     Individual(const Individual  &ind);
     Individual(int route_cap, int node_cap);
-    Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route);
+    Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand__sum_per_route);
     ~Individual();
 
-    void start_lower_solution(); // no use so far
+    void start_lower_solution() const; // no use so far
     void set_lower_cost(double lower_cost_);
-    void set_lower_routes(const vector<vector<int>>& lower_routes_);
-    void set_routes(const vector<vector<int>>& routes_); // no use so far
+//    void set_lower_routes(const vector<vector<int>>& lower_routes_);
+//    void set_routes(const vector<vector<int>>& routes_); // no use so far
 
     friend ostream& operator<<(ostream& os, const Individual& individual);
 };

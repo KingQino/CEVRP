@@ -25,23 +25,23 @@ vector<vector<int>> prins_split(const vector<int>& chromosome, Case& instance) {
         int j = i;
         do
         {
-            load += instance.get_customer_demand(x[j]);
+            load += instance.get_customer_demand_(x[j]);
             if (i == j) {
-                cost = instance.get_distance(instance.depot, x[j]) * 2;
+                cost = instance.get_distance(instance.depot_, x[j]) * 2;
             } else {
-                cost -= instance.get_distance(x[j -1], instance.depot);
+                cost -= instance.get_distance(x[j -1], instance.depot_);
                 cost += instance.get_distance(x[j -1], x[j]);
-                cost += instance.get_distance(instance.depot, x[j]);
+                cost += instance.get_distance(instance.depot_, x[j]);
             }
 
-            if (load <= instance.maxC) {
+            if (load <= instance.max_vehicle_capa_) {
                 if (vv[i - 1] + cost < vv[j]) {
                     vv[j] = vv[i - 1] + cost;
                     pp[j] = i - 1;
                 }
                 j++;
             }
-        } while (!(j >= x.size() || load >instance.maxC));
+        } while (!(j >= x.size() || load >instance.max_vehicle_capa_));
     }
 
     vector<vector<int>> all_routes;
@@ -61,31 +61,31 @@ vector<vector<int>> prins_split(const vector<int>& chromosome, Case& instance) {
 
 // Hien et al., "A greedy search based evolutionary algorithm for electric vehicle routing problem", 2023.
 vector<vector<int>> hien_clustering(const Case& instance, std::default_random_engine& rng) {
-    vector<int> customers(instance.customers);
+    vector<int> customers_(instance.customers_);
 
-    std::shuffle(customers.begin(), customers.end(), rng);
+    std::shuffle(customers_.begin(), customers_.end(), rng);
 
     vector<vector<int>> tours;
 
     vector<int> tour;
-    while (!customers.empty()) {
+    while (!customers_.empty()) {
         tour.clear();
 
-        int anchor = customers.front();
-        customers.erase(customers.begin());
+        int anchor = customers_.front();
+        customers_.erase(customers_.begin());
         tour.push_back(anchor);
-        int cap = instance.get_customer_demand(anchor);
+        int cap = instance.get_customer_demand_(anchor);
 
-        const vector<int> &nearby_customers = instance.customerClusterMap.at(anchor);
+        const vector<int> &nearby_customers = instance.customer_to_cluster_map_.at(anchor);
         for (int node: nearby_customers) {
-            auto it = find(customers.begin(), customers.end(), node);
-            if (it == customers.end()) {
+            auto it = find(customers_.begin(), customers_.end(), node);
+            if (it == customers_.end()) {
                 continue;
             }
-            if (cap + instance.get_customer_demand(node) <= instance.maxC) {
+            if (cap + instance.get_customer_demand_(node) <= instance.max_vehicle_capa_) {
                 tour.push_back(node);
-                cap += instance.get_customer_demand(node);
-                customers.erase(it);
+                cap += instance.get_customer_demand_(node);
+                customers_.erase(it);
             } else {
                 tours.push_back(tour);
                 break;
@@ -106,10 +106,10 @@ void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::defa
 
     int cap1 = 0;
     for (int node : lastRoute) {
-        cap1 += instance.get_customer_demand(node);
+        cap1 += instance.get_customer_demand_(node);
     }
 
-    for (int x : instance.customerClusterMap.at(customer)) {
+    for (int x : instance.customer_to_cluster_map_.at(customer)) {
         if (find(lastRoute.begin(), lastRoute.end(), x) != lastRoute.end()) {
             continue;
         }
@@ -122,15 +122,15 @@ void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::defa
             vector<int>& route2 = *route2It;
             int cap2 = 0;
             for (int node : route2) {
-                cap2 += instance.get_customer_demand(node);
+                cap2 += instance.get_customer_demand_(node);
             }
 
-            int demandX = instance.get_customer_demand(x);
+            int demand_X = instance.get_customer_demand_(x);
 
-            if (demandX + cap1 <= instance.maxC && abs((cap1 + demandX) - (cap2 - demandX)) < abs(cap1 - cap2)) {
+            if (demand_X + cap1 <= instance.max_vehicle_capa_ && abs((cap1 + demand_X) - (cap2 - demand_X)) < abs(cap1 - cap2)) {
                 route2.erase(remove(route2.begin(), route2.end(), x), route2.end());
                 lastRoute.push_back(x);
-                cap1 += demandX;
+                cap1 += demand_X;
             } else {
                 break;
             }
@@ -139,14 +139,14 @@ void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::defa
 }
 
 vector<vector<int>> routes_constructor_with_split(Case& instance, std::default_random_engine& rng) {
-    vector<int> a_giant_tour(instance.customers);
+    vector<int> a_giant_tour(instance.customers_);
 
     shuffle(a_giant_tour.begin(), a_giant_tour.end(), rng);
 
     vector<vector<int>> all_routes = prins_split(a_giant_tour, instance);
     for (auto& route : all_routes) {
-        route.insert(route.begin(), instance.depot);
-        route.push_back(instance.depot);
+        route.insert(route.begin(), instance.depot_);
+        route.push_back(instance.depot_);
     }
 
     return all_routes;
@@ -166,26 +166,26 @@ vector<vector<int>> routes_constructor_with_hien_method(const Case& instance, st
 
 // Jia Ya-Hui, et al., "Confidence-Based Ant Colony Optimization for Capacitated Electric Vehicle Routing Problem With Comparison of Different Encoding Schemes", 2022
 vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance, std::default_random_engine& rng) {
-    vector<int> customers(instance.customers);
+    vector<int> customers_(instance.customers_);
 
     int vehicle_idx = 0; // vehicle index - starts from the vehicle 0
     int load_of_one_route = 0; // the load of the current vehicle
-    vector<int> route = {instance.depot}; // the first route starts from depot 0
+    vector<int> route = {instance.depot_}; // the first route starts from depot_ 0
 
     vector<vector<int>> all_routes;
-    while(!customers.empty()) {
+    while(!customers_.empty()) {
         vector<int> all_temp;
-        for(int i : customers) {
-            if(instance.get_customer_demand(i) <= instance.maxC - load_of_one_route) {
+        for(int i : customers_) {
+            if(instance.get_customer_demand_(i) <= instance.max_vehicle_capa_ - load_of_one_route) {
                 all_temp.push_back(i);
             }
         }
 
-        int remain_total_demand = accumulate(customers.begin(), customers.end(), 0, [&](int total, int i) {
-            return total + instance.get_customer_demand(i);
+        int remain_total_demand_ = accumulate(customers_.begin(), customers_.end(), 0, [&](int total, int i) {
+            return total + instance.get_customer_demand_(i);
         });
-        if(remain_total_demand <= instance.maxC * (instance.vehicleNumber - vehicle_idx - 1) || all_temp.empty()) {
-            all_temp.push_back(instance.depot); // add depot node into the all_temp
+        if(remain_total_demand_ <= instance.max_vehicle_capa_ * (instance.num_vehicle_ - vehicle_idx - 1) || all_temp.empty()) {
+            all_temp.push_back(instance.depot_); // add depot_ node into the all_temp
         }
 
         int cur = route.back();
@@ -193,18 +193,18 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
         int next = all_temp[distribution(rng)]; // int next = roulette_wheel_selection(all_temp, cur);
         route.push_back(next);
 
-        if (next == instance.depot) {
+        if (next == instance.depot_) {
             all_routes.push_back(route);
             vehicle_idx += 1;
             route = {0};
             load_of_one_route = 0;
         } else {
-            load_of_one_route += instance.get_customer_demand(next);
-            customers.erase(remove(customers.begin(), customers.end(), next), customers.end());
+            load_of_one_route += instance.get_customer_demand_(next);
+            customers_.erase(remove(customers_.begin(), customers_.end(), next), customers_.end());
         }
     }
 
-    route.push_back(instance.depot);
+    route.push_back(instance.depot_);
     all_routes.push_back(route);
 
     return all_routes;
@@ -277,11 +277,11 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
         route_pairs.erase(route_pairs.begin());
         int frdem = 0;
         for (int n1 = 0; n1 < individual.num_nodes_per_route[r1] - 1; n1++) {
-            frdem += instance.get_customer_demand(individual.routes[r1][n1]);
+            frdem += instance.get_customer_demand_(individual.routes[r1][n1]);
             int srdem = 0;
             for (int n2 = 0; n2 < individual.num_nodes_per_route[r2] - 1; n2++) {
-                srdem += instance.get_customer_demand(individual.routes[r2][n2]);
-                if (frdem + individual.demand_sum_per_route[r2] - srdem <= instance.maxC && srdem + individual.demand_sum_per_route[r1] - frdem <= instance.maxC) {
+                srdem += instance.get_customer_demand_(individual.routes[r2][n2]);
+                if (frdem + individual.demand__sum_per_route[r2] - srdem <= instance.max_vehicle_capa_ && srdem + individual.demand__sum_per_route[r1] - frdem <= instance.max_vehicle_capa_) {
                     double xx1 = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1]) +
                                  instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
                     double xx2 = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2 + 1]) +
@@ -302,10 +302,10 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                         }
                         individual.num_nodes_per_route[r1] = counter1;
                         individual.num_nodes_per_route[r2] = counter2;
-                        int newdemsum1 = frdem + individual.demand_sum_per_route[r2] - srdem;
-                        int newdemsum2 = srdem + individual.demand_sum_per_route[r1] - frdem;
-                        individual.demand_sum_per_route[r1] = newdemsum1;
-                        individual.demand_sum_per_route[r2] = newdemsum2;
+                        int newdemsum1 = frdem + individual.demand__sum_per_route[r2] - srdem;
+                        int newdemsum2 = srdem + individual.demand__sum_per_route[r1] - frdem;
+                        individual.demand__sum_per_route[r1] = newdemsum1;
+                        individual.demand__sum_per_route[r2] = newdemsum2;
                         updated = true;
                         updated2 = true;
                         for (int i = 0; i < r1; i++) {
@@ -314,22 +314,22 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                         for (int i = 0; i < r2; i++) {
                             route_pairs.insert({i, r2});
                         }
-                        if (individual.demand_sum_per_route[r1] == 0) {
+                        if (individual.demand__sum_per_route[r1] == 0) {
                             int* tempp = individual.routes[r1];
                             individual.routes[r1] = individual.routes[individual.num_routes - 1];
                             individual.routes[individual.num_routes - 1] = tempp;
-                            individual.demand_sum_per_route[r1] = individual.demand_sum_per_route[individual.num_routes - 1];
+                            individual.demand__sum_per_route[r1] = individual.demand__sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r1] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
                             for (int i = 0; i < individual.num_routes; i++) {
                                 route_pairs.erase({i, individual.num_routes});
                             }
                         }
-                        if (individual.demand_sum_per_route[r2] == 0) {
+                        if (individual.demand__sum_per_route[r2] == 0) {
                             int* tempp = individual.routes[r2];
                             individual.routes[r2] = individual.routes[individual.num_routes - 1];
                             individual.routes[individual.num_routes - 1] = tempp;
-                            individual.demand_sum_per_route[r2] = individual.demand_sum_per_route[individual.num_routes - 1];
+                            individual.demand__sum_per_route[r2] = individual.demand__sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r2] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
                             for (int i = 0; i < individual.num_routes; i++) {
@@ -339,7 +339,7 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                         break;
                     }
                 }
-                else if (frdem + srdem <= instance.maxC && individual.demand_sum_per_route[r1] - frdem + individual.demand_sum_per_route[r2] - srdem <= instance.maxC) {
+                else if (frdem + srdem <= instance.max_vehicle_capa_ && individual.demand__sum_per_route[r1] - frdem + individual.demand__sum_per_route[r2] - srdem <= instance.max_vehicle_capa_) {
                     double xx1 = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1])
                                  + instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
                     double xx2 = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2])
@@ -367,9 +367,9 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                         individual.num_nodes_per_route[r2] = counter2;
 
                         int newdemsum1 = frdem + srdem;
-                        int newdemsum2 = individual.demand_sum_per_route[r1] + individual.demand_sum_per_route[r2] - frdem - srdem;
-                        individual.demand_sum_per_route[r1] = newdemsum1;
-                        individual.demand_sum_per_route[r2] = newdemsum2;
+                        int newdemsum2 = individual.demand__sum_per_route[r1] + individual.demand__sum_per_route[r2] - frdem - srdem;
+                        individual.demand__sum_per_route[r1] = newdemsum1;
+                        individual.demand__sum_per_route[r2] = newdemsum2;
                         updated = true;
                         updated2 = true;
                         for (int i = 0; i < r1; i++) {
@@ -378,22 +378,22 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                         for (int i = 0; i < r2; i++) {
                             route_pairs.insert({i, r2});
                         }
-                        if (individual.demand_sum_per_route[r1] == 0) {
+                        if (individual.demand__sum_per_route[r1] == 0) {
                             int* tempp = individual.routes[r1];
                             individual.routes[r1] = individual.routes[individual.num_routes - 1];
                             individual.routes[individual.num_routes - 1] = tempp;
-                            individual.demand_sum_per_route[r1] = individual.demand_sum_per_route[individual.num_routes - 1];
+                            individual.demand__sum_per_route[r1] = individual.demand__sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r1] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
                             for (int i = 0; i < individual.num_routes; i++) {
                                 route_pairs.erase({i, individual.num_routes});
                             }
                         }
-                        if (individual.demand_sum_per_route[r2] == 0) {
+                        if (individual.demand__sum_per_route[r2] == 0) {
                             int* tempp = individual.routes[r2];
                             individual.routes[r2] = individual.routes[individual.num_routes - 1];
                             individual.routes[individual.num_routes - 1] = tempp;
-                            individual.demand_sum_per_route[r2] = individual.demand_sum_per_route[individual.num_routes - 1];
+                            individual.demand__sum_per_route[r2] = individual.demand__sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r2] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
                             for (int i = 0; i < individual.num_routes; i++) {
@@ -490,7 +490,7 @@ bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& 
         int mini = 0, minj = 0;
         for (int i = 1; i < length1 - 1; i++) {
             // vehicle capacity constraint check
-            if (loading2 + instance.get_customer_demand(route1[i]) > instance.maxC) {
+            if (loading2 + instance.get_customer_demand_(route1[i]) > instance.max_vehicle_capa_) {
                 continue; // not satisfy the vehicle capacity constraint
             } else {
                 for (int j = 0; j < length2 - 1; j++) {
@@ -513,13 +513,13 @@ bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& 
                 route1[i] = route1[i + 1];
             }
             length1--;
-            loading1 -= instance.get_customer_demand(x);
+            loading1 -= instance.get_customer_demand_(x);
             for (int j = length2; j > minj + 1; j--) {
                 route2[j] = route2[j - 1];
             }
             route2[minj + 1] = x;
             length2++;
-            loading2 += instance.get_customer_demand(x);
+            loading2 += instance.get_customer_demand_(x);
             cost -= min_change;
         }
     } while (min_change > 0);
@@ -539,18 +539,18 @@ bool one_point_move_inter_route_for_individual(Individual& individual, Case& ins
         int r2 = route_pairs.begin()->second;
         route_pairs.erase(route_pairs.begin());
         node_shift_between_two_routes(individual.routes[r1], individual.routes[r2], individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
-                                      individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2], individual.upper_cost, instance);
+                                      individual.demand__sum_per_route[r1], individual.demand__sum_per_route[r2], individual.upper_cost, instance);
     }
 
-    // iterate the variable "demand_sum_per_route" to remove the empty route, if the demand_sum_per_route is 0, then remove the route
+    // iterate the variable "demand__sum_per_route" to remove the empty route, if the demand__sum_per_route is 0, then remove the route
     for (int i = 0; i < individual.num_routes; i++) {
-        if (individual.demand_sum_per_route[i] == 0) {
+        if (individual.demand__sum_per_route[i] == 0) {
             for (int j = i; j < individual.num_routes - 1; j++) {
                 int* temp = individual.routes[j];
                 individual.routes[j] = individual.routes[j + 1];
                 individual.routes[j + 1] = temp;
                 individual.num_nodes_per_route[j] = individual.num_nodes_per_route[j + 1];
-                individual.demand_sum_per_route[j] = individual.demand_sum_per_route[j + 1];
+                individual.demand__sum_per_route[j] = individual.demand__sum_per_route[j + 1];
             }
             individual.num_routes--;
             i--;
@@ -560,7 +560,7 @@ bool one_point_move_inter_route_for_individual(Individual& individual, Case& ins
     // update the variable "num_routes" and "route_cap" to remove the empty route
     for (size_t i = individual.num_routes; i < individual.route_cap; ++i) {
         individual.num_nodes_per_route[i] = 0;
-        individual.demand_sum_per_route[i] = 0;
+        individual.demand__sum_per_route[i] = 0;
     }
 
     return true;
@@ -600,17 +600,17 @@ bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, in
     // vehicle capacity constraint check and fitness improvement check
     for (int i = 1; i < length1 - 1; i++) {
         for (int j = 1; j < length2 - 1; j++) {
-            int demandI = instance.get_customer_demand(route1[i]);
-            int demandJ = instance.get_customer_demand(route2[j]);
-            if (loading1 - demandI + demandJ <= instance.maxC && loading2 - demandJ + demandI <= instance.maxC) {
+            int demand_I = instance.get_customer_demand_(route1[i]);
+            int demand_J = instance.get_customer_demand_(route2[j]);
+            if (loading1 - demand_I + demand_J <= instance.max_vehicle_capa_ && loading2 - demand_J + demand_I <= instance.max_vehicle_capa_) {
                 double old_cost = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1])
                                  + instance.get_distance(route2[j - 1], route2[j]) + instance.get_distance(route2[j], route2[j + 1]);
                 double new_cost = instance.get_distance(route1[i - 1], route2[j]) + instance.get_distance(route2[j], route1[i + 1])
                                  + instance.get_distance(route2[j - 1], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
                 if (new_cost < old_cost) {
                     swap(route1[i], route2[j]);
-                    loading1 = loading1 - demandI + demandJ;
-                    loading2 = loading2 - demandJ + demandI;
+                    loading1 = loading1 - demand_I + demand_J;
+                    loading2 = loading2 - demand_J + demand_I;
                     cost -= old_cost - new_cost;
                 }
             }
@@ -633,7 +633,7 @@ bool two_point_move_inter_route_for_individual(Individual& individual, Case& ins
         int r2 = route_pairs.begin()->second;
         route_pairs.erase(route_pairs.begin());
         two_nodes_swap_between_two_routes(individual.routes[r1], individual.routes[r2], individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
-                                          individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2], individual.upper_cost, instance);
+                                          individual.demand__sum_per_route[r1], individual.demand__sum_per_route[r2], individual.upper_cost, instance);
     }
 
     return true;
@@ -672,12 +672,12 @@ double insert_station_by_simple_enumeration_array(int* route, int length, int* r
     for (int i = 1; i < length; i++) {
         accumulateDistance[i] = accumulateDistance[i - 1] + instance.get_distance(route[i], route[i - 1]);
     }
-    if (accumulateDistance.back() <= instance.maxDis) {
+    if (accumulateDistance.back() <= instance.max_distance_) {
         return accumulateDistance.back();
     }
 
-    int ub = (int)(accumulateDistance.back() / instance.maxDis + 1);
-    int lb = (int)(accumulateDistance.back() / instance.maxDis);
+    int ub = (int)(accumulateDistance.back() / instance.max_distance_ + 1);
+    int lb = (int)(accumulateDistance.back() / instance.max_distance_);
     int* chosenPos = new int[length];
     int* bestChosenPos = new int[length]; // customized variable
     double final_cost = numeric_limits<double>::max();
@@ -692,7 +692,7 @@ double insert_station_by_simple_enumeration_array(int* route, int length, int* r
             for (int j = 0; j < i; ++j) {
                 int from = route[bestChosenPos[j]];
                 int to = route[bestChosenPos[j] + 1];
-                int station = instance.bestStation[from][to];
+                int station = instance.best_station_[from][to];
 
                 int numElementsToCopy = bestChosenPos[j] + 1 - idx;
                 memcpy(&repaired_route[currentIndex], &route[idx], numElementsToCopy * sizeof(int));
@@ -723,9 +723,9 @@ double insert_station_by_simple_enumeration_array(int* route, int length, int* r
 double insert_station_by_remove_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
     list<pair<int, int>> stationInserted;
     for (int i = 0; i < length - 1; i++) {
-        double allowedDis = instance.maxDis;
+        double allowedDis = instance.max_distance_;
         if (i != 0) {
-            allowedDis = instance.maxDis - instance.get_distance(stationInserted.back().second, route[i]);
+            allowedDis = instance.max_distance_ - instance.get_distance(stationInserted.back().second, route[i]);
         }
         int onestation = instance.get_best_and_feasible_station(route[i], route[i + 1], allowedDis);
         if (onestation == -1) return -1;
@@ -747,7 +747,7 @@ double insert_station_by_remove_array(int* route, int length, int* repaired_rout
                 sumdis += instance.get_distance(route[i], route[i + 1]);
             }
             sumdis += instance.get_distance(route[endInd], endstation);
-            if (sumdis <= instance.maxDis) {
+            if (sumdis <= instance.max_distance_) {
                 savedis = instance.get_distance(route[itr->first], itr->second)
                           + instance.get_distance(itr->second, route[itr->first + 1])
                           - instance.get_distance(route[itr->first], route[itr->first + 1]);
@@ -758,7 +758,7 @@ double insert_station_by_remove_array(int* route, int length, int* repaired_rout
             for (int i = 0; i < length - 1; i++) {
                 sumdis += instance.get_distance(route[i], route[i + 1]);
             }
-            if (sumdis <= instance.maxDis) {
+            if (sumdis <= instance.max_distance_) {
                 savedis = instance.get_distance(route[itr->first], itr->second)
                           + instance.get_distance(itr->second, route[itr->first + 1])
                           - instance.get_distance(route[itr->first], route[itr->first + 1]);
@@ -781,7 +781,7 @@ double insert_station_by_remove_array(int* route, int length, int* repaired_rout
                     sumdis += instance.get_distance(route[i], route[i + 1]);
                 }
                 sumdis += instance.get_distance(route[endInd], next->second);
-                if (sumdis <= instance.maxDis) {
+                if (sumdis <= instance.max_distance_) {
                     double savedistemp = instance.get_distance(route[itr->first], itr->second)
                                          + instance.get_distance(itr->second, route[itr->first + 1])
                                          - instance.get_distance(route[itr->first], route[itr->first + 1]);
@@ -797,7 +797,7 @@ double insert_station_by_remove_array(int* route, int length, int* repaired_rout
                 for (int i = startInd; i < length - 1; i++) {
                     sumdis += instance.get_distance(route[i], route[i + 1]);
                 }
-                if (sumdis <= instance.maxDis) {
+                if (sumdis <= instance.max_distance_) {
                     double savedistemp = instance.get_distance(route[itr->first], itr->second)
                                          + instance.get_distance(itr->second, route[itr->first + 1])
                                          - instance.get_distance(route[itr->first], route[itr->first + 1]);
@@ -848,22 +848,22 @@ double insert_station_by_remove_array(int* route, int length, int* repaired_rout
 void tryACertainNArray(int mlen, int nlen, int* chosenPos, int* bestChosenPos, double& finalfit, int curub, int* route, int length, vector<double>& accumulateDis, Case& instance) {
     for (int i = mlen; i <= length - 1 - nlen; i++) {
         if (curub == nlen) {
-            double onedis = instance.get_distance(route[i], instance.bestStation[route[i]][route[i + 1]]);
-            if (accumulateDis[i] + onedis > instance.maxDis) {
+            double onedis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
+            if (accumulateDis[i] + onedis > instance.max_distance_) {
                 break;
             }
         }
         else {
             int lastpos = chosenPos[curub - nlen - 1];
-            double onedis = instance.get_distance(route[lastpos + 1], instance.bestStation[route[lastpos]][route[lastpos + 1]]);
-            double twodis = instance.get_distance(route[i], instance.bestStation[route[i]][route[i + 1]]);
-            if (accumulateDis[i] - accumulateDis[lastpos + 1] + onedis + twodis > instance.maxDis) {
+            double onedis = instance.get_distance(route[lastpos + 1], instance.best_station_[route[lastpos]][route[lastpos + 1]]);
+            double twodis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
+            if (accumulateDis[i] - accumulateDis[lastpos + 1] + onedis + twodis > instance.max_distance_) {
                 break;
             }
         }
         if (nlen == 1) {
-            double onedis = accumulateDis.back() - accumulateDis[i + 1] + instance.get_distance(instance.bestStation[route[i]][route[i + 1]], route[i + 1]);
-            if (onedis > instance.maxDis) {
+            double onedis = accumulateDis.back() - accumulateDis[i + 1] + instance.get_distance(instance.best_station_[route[i]][route[i + 1]], route[i + 1]);
+            if (onedis > instance.max_distance_) {
                 continue;
             }
         }
@@ -877,7 +877,7 @@ void tryACertainNArray(int mlen, int nlen, int* chosenPos, int* bestChosenPos, d
             for (int j = 0; j < curub; j++) {
                 int firstnode = route[chosenPos[j]];
                 int secondnode = route[chosenPos[j] + 1];
-                int thestation = instance.bestStation[firstnode][secondnode];
+                int thestation = instance.best_station_[firstnode][secondnode];
                 disum -= instance.get_distance(firstnode, secondnode);
                 disum += instance.get_distance(firstnode, thestation);
                 disum += instance.get_distance(secondnode, thestation);

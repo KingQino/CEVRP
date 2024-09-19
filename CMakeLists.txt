@@ -11,6 +11,8 @@ set(DEPENDENCIES
         src/individual.cpp
         include/utils.hpp
         src/utils.cpp
+        include/stats_interface.hpp
+        src/stats_interface.cpp
 )
 
 

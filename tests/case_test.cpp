@@ -10,8 +10,8 @@ using namespace ::testing;
 class CaseTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        string fileName = "E-n22-k4.evrp";
-        instance = new Case(1, fileName);
+        string file_name_ = "E-n22-k4.evrp";
+        instance = new Case(1, file_name_);
     }
 
     void TearDown() override {
@@ -25,14 +25,14 @@ TEST_F(CaseTest, Init) {
     vector<int> customerOne2CustomerListNearToFar = {2, 6, 5, 3, 7, 4, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
 
     SCOPED_TRACE("Case init...");
-    ASSERT_EQ(instance->customers.size(), 21);
-    ASSERT_EQ(instance->stations.size(), 8);
-    ASSERT_EQ(instance->customerClusterMap[1], customerOne2CustomerListNearToFar);
-    ASSERT_EQ(instance->bestStation[1][13], 24);
-    ASSERT_EQ(instance->bestStation[0][21], 22);
-    ASSERT_EQ(instance->bestStation[5][6], 29);
-    ASSERT_EQ(instance->maxEvals, 750000);
-    ASSERT_EQ(instance->get_customer_demand(2), 700);
+    ASSERT_EQ(instance->customers_.size(), 21);
+    ASSERT_EQ(instance->stations_.size(), 8);
+    ASSERT_EQ(instance->customer_to_cluster_map_[1], customerOne2CustomerListNearToFar);
+    ASSERT_EQ(instance->best_station_[1][13], 24);
+    ASSERT_EQ(instance->best_station_[0][21], 22);
+    ASSERT_EQ(instance->best_station_[5][6], 29);
+    ASSERT_EQ(instance->max_evals_, 750000);
+    ASSERT_EQ(instance->get_customer_demand_(2), 700);
     ASSERT_TRUE(instance->is_charging_station(0));
     ASSERT_TRUE(instance->is_charging_station(22));
     ASSERT_TRUE(instance->is_charging_station(29));

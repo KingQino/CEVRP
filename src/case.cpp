@@ -6,26 +6,26 @@
 
 const int Case::MAX_EVALUATION_FACTOR = 25'000;
 
-Case::Case(int id, const string& fileName) {
-    this->id = id;
-    this->fileName = fileName;
+Case::Case(int id, const string& file_name_) {
+    this->id_ = id;
+    this->file_name_ = file_name_;
 
-    this->read_problem(kDataPath + fileName);
+    this->read_problem(kDataPath + file_name_);
 }
 
 Case::~Case() {
-    for (int i = 0; i < actualProblemSize; i++) {
-        delete[] this->distances[i];
+    for (int i = 0; i < problem_size_; i++) {
+        delete[] this->distances_[i];
     }
-    delete[] this->distances;
-    for (int i = 0; i < depotNumber + customerNumber; i++) {
-        delete[] this->bestStation[i];
+    delete[] this->distances_;
+    for (int i = 0; i < num_depot_ + num_customer_; i++) {
+        delete[] this->best_station_[i];
     }
-    delete[] this->bestStation;
+    delete[] this->best_station_;
 }
 
 void Case::read_problem(const std::string &filePath) {
-    this->depotNumber = 1;
+    this->num_depot_ = 1;
 
     ifstream infile(filePath);
     string line;
@@ -40,101 +40,101 @@ void Case::read_problem(const std::string &filePath) {
         stringstream ss;
         if (line.find("DIMENSION:") != string::npos) {
             ss << extract_value(line);
-            ss >> this->customerNumber;
-            this->customerNumber--;  // Adjusting the customer number
+            ss >> this->num_customer_;
+            this->num_customer_--;  // Adjusting the customer number
         }
         else if (line.find("STATIONS:") != string::npos) {
             ss << extract_value(line);
-            ss >> this->stationNumber;
+            ss >> this->num_station_;
         }
         else if (line.find("VEHICLES:") != string::npos) {
             ss << extract_value(line);
-            ss >> this->vehicleNumber;
+            ss >> this->num_vehicle_;
         }
         else if (line.find("CAPACITY:") != string::npos && line.find("ENERGY") == string::npos) {
             ss << extract_value(line);
-            ss >> this->maxC;
+            ss >> this->max_vehicle_capa_;
         }
         else if (line.find("ENERGY_CAPACITY:") != string::npos) {
             ss << extract_value(line);
-            ss >> this->maxQ;
+            ss >> this->max_battery_capa_;
         }
         else if (line.find("ENERGY_CONSUMPTION:") != string::npos) {
             ss << extract_value(line);
-            ss >> this->conR;
+            ss >> this->energy_consumption_rate_;
         }
         else if (line.find("OPTIMAL_VALUE:") != string::npos) {
             ss << extract_value(line);
-            ss >> this->optimum;
+            ss >> this->optimum_;
         }
         else if (line.find("NODE_COORD_SECTION") != string::npos) {
-            this->actualProblemSize = depotNumber + customerNumber + stationNumber;
-            positions.resize(actualProblemSize, {0, 0});
+            this->problem_size_ = num_depot_ + num_customer_ + num_station_;
+            positions_.resize(problem_size_, {0, 0});
 
             // Reading coordinates
-            for (int i = 0; i < actualProblemSize; ++i) {
+            for (int i = 0; i < problem_size_; ++i) {
                 getline(infile, line);
                 ss.str(line);
                 int ind;
                 double x, y;
                 ss >> ind >> x >> y;
-                positions[ind - 1] = {x, y};  // Set the position
+                positions_[ind - 1] = {x, y};  // Set the position
             }
         }
         else if (line.find("DEMAND_SECTION") != string::npos) {
-            int totalNumber = depotNumber + customerNumber;
-            demand.resize(totalNumber, 0);
+            int totalNumber = num_depot_ + num_customer_;
+            demand_.resize(totalNumber, 0);
 
-            // Reading demand values
+            // Reading demand_ values
             for (int i = 0; i < totalNumber; ++i) {
                 getline(infile, line);
                 ss.clear();
                 ss.str(line);
                 int ind, c;
                 ss >> ind >> c;
-                demand[ind - 1] = c;
-                if (c == 0) depot = ind - 1;  // Identify depot
+                demand_[ind - 1] = c;
+                if (c == 0) depot_ = ind - 1;  // Identify depot_
             }
         }
     }
     infile.close();
 
     // preprocess variables
-    for (int i = 1; i < depotNumber + customerNumber; ++i) {
-        customers.push_back(i);
+    for (int i = 1; i < num_depot_ + num_customer_; ++i) {
+        customers_.push_back(i);
     }
-    for (int i = depotNumber + customerNumber; i < actualProblemSize; ++i) {
-        stations.push_back(i);
+    for (int i = num_depot_ + num_customer_; i < problem_size_; ++i) {
+        stations_.push_back(i);
     }
-    this->maxDis = maxQ / conR;
-    this->totalDem = std::accumulate(demand.begin(), demand.end(), 0);
-    this->distances = generate_2D_matrix_double(actualProblemSize, actualProblemSize);
-    for (int i = 0; i < actualProblemSize; i++) {
-        for (int j = 0; j < actualProblemSize; j++) {
-            distances[i][j] = euclidean_distance(i, j);
+    this->max_distance_ = max_battery_capa_ / energy_consumption_rate_;
+    this->total_demand_ = std::accumulate(demand_.begin(), demand_.end(), 0);
+    this->distances_ = generate_2D_matrix_double(problem_size_, problem_size_);
+    for (int i = 0; i < problem_size_; i++) {
+        for (int j = 0; j < problem_size_; j++) {
+            distances_[i][j] = euclidean_distance(i, j);
         }
     }
-    this->bestStation = new int* [depotNumber + customerNumber];
-    for (int i = 0; i < depotNumber + customerNumber; i++) {
-        this->bestStation[i] = new int[depotNumber + customerNumber];
+    this->best_station_ = new int* [num_depot_ + num_customer_];
+    for (int i = 0; i < num_depot_ + num_customer_; i++) {
+        this->best_station_[i] = new int[num_depot_ + num_customer_];
     }
-    for (int i = 0; i < depotNumber + customerNumber - 1; i++) {
-        for (int j = i + 1; j < depotNumber + customerNumber; j++) {
-            this->bestStation[i][j] = this->bestStation[j][i] = get_best_station(i, j);
+    for (int i = 0; i < num_depot_ + num_customer_ - 1; i++) {
+        for (int j = i + 1; j < num_depot_ + num_customer_; j++) {
+            this->best_station_[i][j] = this->best_station_[j][i] = get_best_station(i, j);
         }
     }
 
     init_customer_to_customers_maps();
     init_customer_nearest_station_map();
 
-    this->evals = 0.0;
-    this->maxEvals = actualProblemSize * MAX_EVALUATION_FACTOR;
-    if (customerNumber <= 100) {
-        maxExecTime = int (1 * (actualProblemSize / 100.0) * 60 * 60);
-    } else if (customerNumber <= 915) {
-        maxExecTime = int (2 * (actualProblemSize / 100.0) * 60 * 60);
+    this->evals_ = 0.0;
+    this->max_evals_ = problem_size_ * MAX_EVALUATION_FACTOR;
+    if (num_customer_ <= 100) {
+        max_exec_time_ = int (1 * (problem_size_ / 100.0) * 60 * 60);
+    } else if (num_customer_ <= 915) {
+        max_exec_time_ = int (2 * (problem_size_ / 100.0) * 60 * 60);
     } else {
-        maxExecTime = int (3 * (actualProblemSize / 100.0) * 60 * 60);
+        max_exec_time_ = int (3 * (problem_size_ / 100.0) * 60 * 60);
     }
 
 }
@@ -154,16 +154,16 @@ double **Case::generate_2D_matrix_double(int n, int m) {
 }
 
 double Case::euclidean_distance(int i, int j) {
-    return sqrt(pow(positions[i].first - positions[j].first, 2) +
-                pow(positions[i].second - positions[j].second, 2));
+    return sqrt(pow(positions_[i].first - positions_[j].first, 2) +
+                pow(positions_[i].second - positions_[j].second, 2));
 }
 
 int Case::get_best_station(int from, int to) const {
     int targetStation = -1;
     double minDis = std::numeric_limits<double>::max();
 
-    for (int i = customerNumber + 1 ; i < actualProblemSize; ++i) {
-        double dis = distances[from][i] + distances[to][i];
+    for (int i = num_customer_ + 1 ; i < problem_size_; ++i) {
+        double dis = distances_[from][i] + distances_[to][i];
 
         if (minDis > dis && from != i && to != i) {
             targetStation = i;
@@ -178,81 +178,81 @@ int Case::get_best_and_feasible_station(int from, int to, double max_dis) const 
     int targetStation = -1;
     double minDis = std::numeric_limits<double>::max();
 
-    for (int i = customerNumber + 1; i < actualProblemSize; ++i) {
-        if (distances[from][i] < max_dis &&
-            minDis > distances[from][i]  + distances[to][i]  &&
+    for (int i = num_customer_ + 1; i < problem_size_; ++i) {
+        if (distances_[from][i] < max_dis &&
+            minDis > distances_[from][i]  + distances_[to][i]  &&
             from != i && to != i &&
-            distances[i][to] < maxDis) {
+            distances_[i][to] < max_distance_) {
 
             targetStation = i;
-            minDis = distances[from][i] + distances[to][i];
+            minDis = distances_[from][i] + distances_[to][i];
         }
     }
 
     return targetStation;
 }
 
-int Case::get_customer_demand(int customer) const {
-    return demand[customer];
+int Case::get_customer_demand_(int customer) const {
+    return demand_[customer];
 }
 
 double Case::get_distance(int from, int to) {
     //adds partial evaluation to the overall fitness evaluation count
     //It can be used when local search is used and a whole evaluation is not necessary
-    evals += (1.0 / actualProblemSize);
+    evals_ += (1.0 / problem_size_);
 
-    return distances[from][to];
+    return distances_[from][to];
 }
 
 void Case::init_customer_to_customers_maps() {
-    this->restrictedCandidateListSize = min(customerNumber / 2, 40);
+    this->restricted_candidate_list_size_ = min(num_customer_ / 2, 40);
 
-    for (int node : customers) {
-        // Create a sorted list of other customers based on the distance to the current node
-        vector<int> other_customers = customers;
+    for (int node : customers_) {
+        // Create a sorted list of other customers_ based on the distance to the current node
+        vector<int> other_customers = customers_;
         other_customers.erase(remove(other_customers.begin(), other_customers.end(), node), other_customers.end());
 
         sort(other_customers.begin(), other_customers.end(), [&](int i, int j) {
-            return distances[node][i] < distances[node][j];
+            return distances_[node][i] < distances_[node][j];
         });
 
-        customerClusterMap[node] = other_customers;
+        customer_to_cluster_map_[node] = other_customers;
 
         // Create the restricted candidate list
-        customerRestrictedCandidateListMap[node] = std::set<int>(
-                other_customers.begin(), other_customers.begin() + restrictedCandidateListSize
+        customer_to_restricted_candidate_list_map_[node] = std::set<int>(
+                other_customers.begin(), other_customers.begin() + restricted_candidate_list_size_
         );
     }
 }
 
 void Case::init_customer_nearest_station_map() {
-    for (int i = 1; i <= customerNumber; ++i) {
+    for (int i = 1; i <= num_customer_; ++i) {
         int nearestStation = -1;
         double minDis = std::numeric_limits<double>::max();
-        for (int j = customerNumber + 1; j < actualProblemSize; ++j) {
-            double dis = distances[i][j];
+        for (int j = num_customer_ + 1; j < problem_size_; ++j) {
+            double dis = distances_[i][j];
             if (minDis > dis) {
                 nearestStation = j;
                 minDis = dis;
             }
         }
-        customerNearestStationMap[i] = make_pair(nearestStation, minDis);
+        customer_to_nearest_station_map_[i] = make_pair(nearestStation, minDis);
     }
 }
 
 double Case::get_evals() const {
-    return evals;
+    return evals_;
 }
 
 double Case::compute_total_distance(int** routes, int num_routes, const int* num_nodes_per_route) {
     double tour_length = 0.0;
     for (int i = 0; i < num_routes; ++i) {
         for (int j = 0; j < num_nodes_per_route[i] - 1; ++j) {
-            tour_length += distances[routes[i][j]][routes[i][j + 1]];
+            tour_length += distances_[routes[i][j]][routes[i][j + 1]];
         }
     }
 
-    evals++;
+    evals_++;
 
     return tour_length;
 }
@@ -260,7 +260,7 @@ double Case::compute_total_distance(int** routes, int num_routes, const int* num
 double Case::compute_total_distance(const int* route, int length) const {
     double tour_length = 0.0;
     for (int j = 0; j < length - 1; ++j) {
-        tour_length += distances[route[j]][route[j + 1]];
+        tour_length += distances_[route[j]][route[j + 1]];
     }
 
     return tour_length;
@@ -270,11 +270,11 @@ double Case::compute_total_distance(const vector<vector<int>> &routes) {
     double tour_length = 0.0;
     for (auto& route : routes) {
         for (int j = 0; j < route.size() - 1; ++j) {
-            tour_length += distances[route[j]][route[j + 1]];
+            tour_length += distances_[route[j]][route[j + 1]];
         }
     }
 
-    evals++;
+    evals_++;
 
     return tour_length;
 }
@@ -282,7 +282,7 @@ double Case::compute_total_distance(const vector<vector<int>> &routes) {
 double Case::compute_total_distance(const vector<int> &route) const {
     double tour_length = 0.0;
     for (int j = 0; j < route.size() - 1; ++j) {
-        tour_length += distances[route[j]][route[j + 1]];
+        tour_length += distances_[route[j]][route[j + 1]];
     }
 
     return tour_length;
@@ -293,7 +293,7 @@ vector<int> Case::compute_demand_sum_per_route(const vector<vector<int>> &routes
     for (auto & route : routes) {
         int temp = 0;
         for (int node : route) {
-            temp += get_customer_demand(node);
+            temp += get_customer_demand_(node);
         }
         demand_sum_per_route.push_back(temp);
     }
@@ -305,7 +305,7 @@ void Case::compute_demand_sum_per_route(int** routes, int num_routes, const int*
     for (int i = 0; i < num_routes; ++i) {
         int temp = 0;
         for (int j = 0; j < num_nodes_per_route[i]; ++j) {
-            temp += get_customer_demand(routes[i][j]);
+            temp += get_customer_demand_(routes[i][j]);
         }
         demand_sum_per_route[i] = temp;
     }
@@ -314,7 +314,7 @@ void Case::compute_demand_sum_per_route(int** routes, int num_routes, const int*
 bool Case::is_charging_station(int node) const {
 
     bool flag;
-    if (node == depot || ( node >= depotNumber + customerNumber && node < actualProblemSize))
+    if (node == depot_ || ( node >= num_depot_ + num_customer_ && node < problem_size_))
         flag = true;
     else
         flag = false;
