@@ -43,7 +43,7 @@ TEST(StatsInterfaceTest, CreateDirectoriesIfNotExists) {
     fs::remove_all(kStatsPath);
 }
 
-TEST(StatsInterfaceTEst, StatsForMultipleTrials) {
+TEST(StatsInterfaceTest, StatsForMultipleTrials) {
     std::string directory_path = kStatsPath + "/algorithm" + "/instance" + "/seed";
     StatsInterface::create_directories_if_not_exists(directory_path);
 

@@ -35,7 +35,7 @@ TEST_F(UtilsTest, PrinsSplit) {
     vector<vector<int>> result = prins_split(    instance->customers_, *instance);
 
     EXPECT_EQ(result.size(), 5);
-    ASSERT_EQ(result[0], vector<int>({19, 20, 21}));
+    EXPECT_EQ(result[0], vector<int>({19, 20, 21}));
 }
 
 TEST_F(UtilsTest, Hien) {
@@ -66,8 +66,8 @@ TEST_F(UtilsTest, Hien) {
 //    cout << endl;
 
     // Assert
-    ASSERT_EQ(size_1, instance->num_customer_);
-    ASSERT_EQ(size_2, instance->num_customer_);
+    EXPECT_EQ(size_1, instance->num_customer_);
+    EXPECT_EQ(size_2, instance->num_customer_);
 }
 
 TEST_F(UtilsTest, RoutesConstructor) {
