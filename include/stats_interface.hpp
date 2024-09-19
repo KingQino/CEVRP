@@ -15,5 +15,40 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <numeric>
+
+namespace fs = std::filesystem;
+using namespace std;
+
+typedef struct tIndicators {
+    double min{};
+    double max{};
+    double avg{};
+    double std{};
+    std::size_t size{};
+} Indicators;
+
+const std::string kStatsPath = "../stats";
+
+class StatsInterface {
+public:
+    std::chrono::high_resolution_clock::time_point start;
+    std::chrono::high_resolution_clock::time_point end;
+    std::chrono::duration<double> duration;
+
+    std::ofstream log_evolution;
+    std::ofstream log_solution;
+
+    static Indicators calculate_statistical_indicators(const std::vector<double>& data) ;
+    static bool create_directories_if_not_exists(const std::string& director_path);
+    static void stats_for_multiple_trials(const std::string& file_path, const std::vector<double>& data); // open a file, save the statistical info, and then close it
+    virtual void open_log_for_evolution() = 0; // open a file
+    virtual void flush_row_into_evol_log() = 0; // flush the evolution info into the file
+    virtual void close_log_for_evolution() = 0; // close the file
+    virtual void save_log_for_solution() = 0; // open a file, save the solution, and close it
+
+    virtual ~StatsInterface() = default;
+};
+
 
 #endif //CEVRP_STATS_INTERFACE_HPP
