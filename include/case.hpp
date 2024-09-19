@@ -29,9 +29,9 @@ class Case {
 public:
     static const int MAX_EVALUATION_FACTOR;
 
-    Case(int id, const string& file_name_);
+    Case(int id, const string& file_name);
     ~Case();
-    void read_problem(const string& filePath);					//reads .evrp file
+    void read_problem(const string& file_path);					//reads .evrp file
     static double **generate_2D_matrix_double(int n, int m);
     void init_customer_to_customers_maps(); // initialize customer_to_cluster_map_ and customer_to_restricted_candidate_list_map_
     void init_customer_nearest_station_map();
