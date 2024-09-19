@@ -90,8 +90,8 @@ TEST_F(UtilsTest, TwoOptForIndividual) {
             {0, 21, 19, 17, 20, 0},
             {0, 14, 16, 12, 15, 18, 0}
     };
-    vector<int> demand__sum_per_route = {6000, 5500, 5900, 5100};
-    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, 485.60155200568835, demand__sum_per_route);
+    vector<int> demand_sum_per_route = {6000, 5500, 5900, 5100};
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, 485.60155200568835, demand_sum_per_route);
 
     two_opt_for_individual(*ind, *instance);
 
@@ -105,8 +105,8 @@ TEST_F(UtilsTest, TwoOptStarForIndividual) {
             {0, 19, 21, 20, 17, 0},
             {0, 12, 15, 18, 14, 16, 0}
     };
-    vector<int> demand__sum_per_route = {5700, 5300, 6000, 5500};
-    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand__sum_per_route);
+    vector<int> demand_sum_per_route = {5700, 5300, 6000, 5500};
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
 
     double fit_prev = ind->upper_cost;
     bool updated = two_opt_star_for_individual(*ind, *instance);
@@ -123,8 +123,8 @@ TEST_F(UtilsTest, OnePointMoveIntraRouteForIndividual) {
             {0, 21, 19, 17, 20, 0},
             {0, 14, 16, 12, 15, 18, 0}
     };
-    vector<int> demand__sum_per_route = {5600, 5400, 6000, 5500};
-    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand__sum_per_route);
+    vector<int> demand_sum_per_route = {5600, 5400, 6000, 5500};
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
 
     double fit_prev = ind->upper_cost;
     one_point_move_intra_route_for_individual(*ind, *instance);
@@ -247,7 +247,7 @@ TEST_F(UtilsTest, TwoPointMoveInterRouteForIndividual) {
     double fit_eval = instance->compute_total_distance(individual->routes, individual->num_routes, individual->num_nodes_per_route);
     int loadingSum = 0;
     for (int i = 0; i < individual->num_routes; ++i) {
-        loadingSum += individual->demand__sum_per_route[i];
+        loadingSum += individual->demand_sum_per_route[i];
     }
 
     EXPECT_LT(fit_cur, fit_prev);
@@ -263,8 +263,8 @@ TEST_F(UtilsTest, FixOneSolution) {
             {0, 17, 12, 6, 1, 3, 11, 0},
             {0, 19, 2, 0}
     };
-    vector<int> demand__sum_per_route = {5600, 5200, 2700, 5800, 3200};
-    unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, 678.8177686900328, demand__sum_per_route);
+    vector<int> demand_sum_per_route = {5600, 5200, 2700, 5800, 3200};
+    unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, 678.8177686900328, demand_sum_per_route);
 
     double fixed_fit = fix_one_solution(*ind, *instance);
     int num_nodes = std::accumulate(ind->lower_num_nodes_per_route, ind->lower_num_nodes_per_route + ind->num_routes, 0);

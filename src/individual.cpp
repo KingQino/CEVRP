@@ -23,8 +23,8 @@ Individual::Individual(const Individual& ind) {
     this->lower_num_nodes_per_route = new int [ind.route_cap];
     memcpy(this->num_nodes_per_route, ind.num_nodes_per_route, sizeof(int) * ind.route_cap);
     memcpy(this->lower_num_nodes_per_route, ind.lower_num_nodes_per_route, sizeof(int) * ind.route_cap);
-    this->demand__sum_per_route = new int[ind.route_cap];
-    memcpy(this->demand__sum_per_route, ind.demand__sum_per_route, sizeof(int) * ind.route_cap);
+    this->demand_sum_per_route = new int[ind.route_cap];
+    memcpy(this->demand_sum_per_route, ind.demand_sum_per_route, sizeof(int) * ind.route_cap);
 }
 
 Individual::Individual(int route_cap, int node_cap) {
@@ -43,13 +43,13 @@ Individual::Individual(int route_cap, int node_cap) {
     this->lower_num_nodes_per_route = new int [route_cap];
     memset(this->num_nodes_per_route, 0, sizeof(int) * route_cap);
     memset(this->lower_num_nodes_per_route, 0, sizeof(int) * route_cap);
-    this->demand__sum_per_route = new int [route_cap];
-    memset(this->demand__sum_per_route, 0, sizeof(int) * route_cap);
+    this->demand_sum_per_route = new int [route_cap];
+    memset(this->demand_sum_per_route, 0, sizeof(int) * route_cap);
     this->upper_cost = 0;
     this->lower_cost = 0;
 }
 
-Individual::Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand__sum_per_route)
+Individual::Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route)
         :Individual(route_cap, node_cap) {
     this->upper_cost = upper_cost;
     this->num_routes = static_cast<int>(routes.size());
@@ -59,8 +59,8 @@ Individual::Individual(int route_cap, int node_cap, const vector<vector<int>>& r
             this->routes[i][j] = routes[i][j];
         }
     }
-    for (int i = 0; i < demand__sum_per_route.size(); ++i) {
-        this->demand__sum_per_route[i] = demand__sum_per_route[i];
+    for (int i = 0; i < demand_sum_per_route.size(); ++i) {
+        this->demand_sum_per_route[i] = demand_sum_per_route[i];
     }
 }
 
@@ -73,7 +73,7 @@ Individual::~Individual() {
     delete[] this->lower_routes;
     delete[] this->num_nodes_per_route;
     delete[] this->lower_num_nodes_per_route;
-    delete[] this->demand__sum_per_route;
+    delete[] this->demand_sum_per_route;
 }
 
 void Individual::start_lower_solution() const {
@@ -127,7 +127,7 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual) {
 
     os << "Demand sum per route: ";
     for (int i = 0; i < individual.route_cap; ++i) {
-        os << individual.demand__sum_per_route[i] << " ";
+        os << individual.demand_sum_per_route[i] << " ";
     }
     os << "\n";
 
