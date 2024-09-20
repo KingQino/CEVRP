@@ -21,7 +21,6 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
 
 Ma::~Ma() {
     population.clear();
-    delete instance;
 }
 
 void Ma::run() {
@@ -55,6 +54,7 @@ void Ma::run() {
                 }
             }
             break;
+
         default:
             std::cerr << "Invalid stop criteria option!" << std::endl;
             break;
@@ -74,3 +74,58 @@ bool Ma::stop_criteria_max_exec_time(const std::chrono::duration<double>& durati
     return duration.count() >= instance->max_exec_time_;
 }
 
+void Ma::initialize_heuristic() {
+    // using clustering approach to initialize the population
+    for (int i = 0; i < this->pop_size; ++i) {
+        vector<vector<int>> routes = routes_constructor_with_hien_method(*instance, random_engine);
+        population.push_back(std::make_shared<Individual>(route_cap, node_cap, routes,
+                                                          instance->compute_total_distance(routes),
+                                                          instance->compute_demand_sum_per_route(routes)));
+    }
+}
+
+void Ma::run_heuristic() {
+
+}
+
+void Ma::open_log_for_evolution() {}
+
+void Ma::flush_row_into_evol_log() {}
+
+void Ma::close_log_for_evolution() {}
+
+void Ma::save_log_for_solution() {}
+
+shared_ptr<Individual> Ma::admit_one_immigrant(const vector<int>& chromosome) {
+    pair<vector<int>, double> result = classical_split(chromosome, *instance);
+    vector<int> split_path = result.first;
+
+    shared_ptr<Individual> ind_ptr = std::make_shared<Individual>(route_cap, node_cap);
+
+    int route_index = 0;
+
+    auto j = chromosome.size();
+    while (true) {
+        int i = split_path[j];
+
+        int customer_pos = 1;
+        for (auto it = chromosome.begin() + i; it < chromosome.begin() + j; ++it) {
+            ind_ptr->routes[route_index][customer_pos++] = *it;
+        }
+        ind_ptr->num_nodes_per_route[route_index] = customer_pos + 1;
+
+        route_index++; // Move to the next route
+
+        j = i;
+        if (i == 0) {
+            break;
+        }
+    }
+
+    ind_ptr->num_routes = route_index;
+    ind_ptr->upper_cost = result.second;
+
+    instance->compute_demand_sum_per_route(ind_ptr->routes, ind_ptr->num_routes, ind_ptr->num_nodes_per_route, ind_ptr->demand_sum_per_route);
+
+    return ind_ptr;
+}

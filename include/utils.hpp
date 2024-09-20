@@ -32,6 +32,7 @@ struct pair_hash
 
 // split - transfer a chromosome into upper-solution
 vector<vector<int>> prins_split(const vector<int>& chromosome, Case& instance);
+pair<vector<int>, double> classical_split(const vector<int>& chromosome, Case& instance);
 vector<vector<int>> hien_clustering(const Case& instance, std::default_random_engine& rng);
 void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::default_random_engine& rng);
 vector<vector<int>> routes_constructor_with_split(Case& instance, std::default_random_engine& rng);

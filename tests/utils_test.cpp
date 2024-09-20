@@ -38,6 +38,47 @@ TEST_F(UtilsTest, PrinsSplit) {
     EXPECT_EQ(result[0], vector<int>({19, 20, 21}));
 }
 
+TEST_F(UtilsTest, ClassicalSplit) {
+    pair<vector<int>, double> cl_sp = classical_split(instance->customers_, *instance);
+    vector<int> split_path = cl_sp.first;
+//    cout << split_path.size() << endl;
+//    for (const auto& node : split_path) {
+//        cout << node << " ";
+//    }
+//    cout << endl << endl;
+
+    vector<int> chromosome = instance->customers_;
+
+    int route_count = 0;                    // Counter for the number of routes
+    vector<int> customers_per_route;        // Vector to store the number of customers per route
+
+    auto j = chromosome.size();
+    while (true) {
+        int i = split_path[j];
+
+        int customer_count = 0;
+        for (auto it = chromosome.begin() + i; it < chromosome.begin() + j; ++it) {
+            customer_count++;
+        }
+
+        customers_per_route.push_back(customer_count);
+        route_count++;
+
+        j = i;
+        if (i == 0) {
+            break;
+        }
+    }
+
+//    cout << "Total number of routes: " << route_count << endl;
+//    for (int k = 0; k < customers_per_route.size(); ++k) {
+//        cout << "Number of customers in Route " << k + 1 << ": " << customers_per_route[k] << endl;
+//    }
+
+    EXPECT_EQ(route_count, 5);
+    EXPECT_EQ(customers_per_route[0], 3);
+}
+
 TEST_F(UtilsTest, Hien) {
     vector<vector<int>> routes = hien_clustering(*instance, rng);
 

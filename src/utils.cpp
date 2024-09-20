@@ -10,6 +10,44 @@
 /*                  Get Upper-level Solution                    */
 /****************************************************************/
 
+pair<vector<int>, double> classical_split(const vector<int>& chromosome, Case& instance) {
+    // Initialize x with an additional 0 at the start
+    std::vector<int> x(chromosome.size() + 1, 0);
+    std::copy(chromosome.begin(), chromosome.end(), x.begin() + 1);
+
+    // Initialize vv and pp vectors
+    std::vector<double> vv(x.size(), std::numeric_limits<double>::max());
+    std::vector<int> pp(x.size(), 0);
+    vv[0] = 0.0;
+
+    // Calculate the shortest paths
+    for (int i = 1; i < x.size(); ++i) {
+        int load = 0;
+        double cost = 0;
+        int j = i;
+        do {
+            load += instance.get_customer_demand_(x[j]);
+            if (i == j) {
+                cost = instance.get_distance(instance.depot_, x[j]) * 2;
+            } else {
+                cost -= instance.get_distance(x[j - 1], instance.depot_);
+                cost += instance.get_distance(x[j - 1], x[j]);
+                cost += instance.get_distance(instance.depot_, x[j]);
+            }
+
+            if (load <= instance.max_vehicle_capa_) {
+                if (vv[i - 1] + cost < vv[j]) {
+                    vv[j] = vv[i - 1] + cost;
+                    pp[j] = i - 1;
+                }
+                j++;
+            }
+        } while (!(j >= x.size() || load > instance.max_vehicle_capa_));
+    }
+
+    return {pp, vv[x.size() - 1]};
+}
+
 // Prins, C., 2004. A simple and effective evolutionary algorithm for the vehicle routing problem. Computers & operations research, 31(12), pp.1985-2002.
 vector<vector<int>> prins_split(const vector<int>& chromosome, Case& instance) {
     vector<int> x(chromosome.size() + 1, 0); // a giant tour starts from 0

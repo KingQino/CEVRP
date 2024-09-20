@@ -29,6 +29,7 @@ add_executable(Tests tests/test_main.cpp
         ${DEPENDENCIES}
         tests/case_test.cpp
         tests/utils_test.cpp
-        tests/stats_interface_test.cpp)
+        tests/stats_interface_test.cpp
+        tests/ma_test.cpp)
 target_include_directories(Tests PRIVATE include external/include) # Include directories for the tests
 target_link_libraries(Tests gtest gtest_main) # Link GoogleTest for tests
