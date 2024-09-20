@@ -33,10 +33,10 @@ const std::string kStatsPath = "../stats";
 class StatsInterface {
 public:
     std::chrono::high_resolution_clock::time_point start;
-    std::chrono::high_resolution_clock::time_point end;
     std::chrono::duration<double> duration;
 
     std::ofstream log_evolution;
+    std::ostringstream oss_row_evol;
     std::ofstream log_solution;
 
     static Indicators calculate_statistical_indicators(const std::vector<double>& data) ;

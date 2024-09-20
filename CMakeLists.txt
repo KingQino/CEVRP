@@ -13,6 +13,9 @@ set(DEPENDENCIES
         src/utils.cpp
         include/stats_interface.hpp
         src/stats_interface.cpp
+        include/ma.hpp
+        src/ma.cpp
+        include/heuristic_interface.hpp
 )
 
 
