@@ -11,6 +11,7 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->route_cap = this->instance->num_vehicle_ * 3;
     this->node_cap = this->instance->num_customer_ + 1;
     this->iter = 0;
+    this->diversity = 0.0;
 
     this->pop_size = 100;
     this->elite_ratio = 0.01;
@@ -118,7 +119,7 @@ void Ma::run_heuristic() {
     chromosomes.reserve(pop_size);
 
     // adaptive selection for crossover
-    double diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
+    diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
     if (diversity > 0.5 ) {
         // a value close to 1 indicates high diversity
         int cx_count_between_elites = int(0.45 * pop_size);
@@ -176,13 +177,43 @@ void Ma::run_heuristic() {
     }
 }
 
-void Ma::open_log_for_evolution() {}
+void Ma::open_log_for_evolution() {
+    string directory = kStatsPath + "/" + this->name + "/" + instance->instance_name_ + "/" + to_string(seed);
+    create_directories_if_not_exists(directory);
 
-void Ma::flush_row_into_evol_log() {}
+    string file_name = "evols." + instance->instance_name_ + ".csv";
+    log_evolution.open(directory + "/" + file_name);
+    log_evolution << "iter,upper_cost,lower_cost,diversity,evals\n";
+}
 
-void Ma::close_log_for_evolution() {}
+void Ma::flush_row_into_evol_log() {
+    oss_row_evol << iter << "," << global_best->upper_cost << "," << global_best->lower_cost << ","
+                 << diversity << "," << instance->get_evals() << "\n";
 
-void Ma::save_log_for_solution() {}
+}
+
+void Ma::close_log_for_evolution() {
+    log_evolution << oss_row_evol.str();
+    oss_row_evol.clear();
+    log_evolution.close();
+}
+
+void Ma::save_log_for_solution() {
+    string directory = kStatsPath + "/" + this->name + "/" + instance->instance_name_ + "/" + to_string(seed);
+//    create_directories_if_not_exists(directory);
+
+    string file_name = "solution." + instance->instance_name_ + ".txt";
+
+    log_solution.open(directory + "/" + file_name);
+    log_solution << fixed << setprecision(5) << global_best->lower_cost << endl;
+    for (int i = 0; i < global_best->num_routes; ++i) {
+        for (int j = 0; j < global_best->lower_num_nodes_per_route[i]; ++j) {
+            log_solution << global_best->lower_routes[i][j] << ",";
+        }
+        log_solution << endl;
+    }
+    log_solution.close();
+}
 
 shared_ptr<Individual> Ma::admit_one_individual(const vector<int>& chromosome) {
     pair<vector<int>, double> result = classical_split(chromosome, *instance);

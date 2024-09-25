@@ -47,6 +47,7 @@ public:
     Case* instance;
     vector<shared_ptr<Individual>> population;
     unique_ptr<Individual> global_best;
+    double diversity;
 
     uniform_int_distribution<int> uniform_int_dist;
     uniform_int_distribution<int> uniform_swap_dist;

@@ -9,6 +9,7 @@ const int Case::MAX_EVALUATION_FACTOR = 25'000;
 Case::Case(int id, const string& file_name) {
     this->id_ = id;
     this->file_name_ = file_name;
+    this->instance_name_ = file_name.substr(0, file_name.find('.'));
 
     this->read_problem(kDataPath + file_name);
 }

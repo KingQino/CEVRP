@@ -52,6 +52,7 @@ public:
 
     int id_;
     string file_name_;
+    string instance_name_;
 
     int num_depot_{};
     int num_customer_{};
