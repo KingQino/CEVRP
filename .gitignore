@@ -2,6 +2,7 @@
 /cmake-build-debug/
 /external/googletest/
 .DS_Store
+stats
 
 # Prerequisites
 *.d
