@@ -16,6 +16,9 @@ public:
     int route_cap; // route capacity - 3 by MIN_VEHICLES
     int node_cap; // node capacity - NUM_OF_CUSTOMERS + num_of_depot
 
+    // chromosome information
+    int chromosome_length;
+
     // upper-level solution for CVRP
     int** routes;
     int num_routes; // the actual number of routes for the solution
@@ -34,8 +37,10 @@ public:
     Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route);
     ~Individual();
 
-    void start_lower_solution() const; // no use so far
+    void start_lower_solution() const;
     void set_lower_cost(double lower_cost_);
+    [[nodiscard]] vector<int> get_chromosome() const;
+
 //    void set_lower_routes(const vector<vector<int>>& lower_routes_);
 //    void set_routes(const vector<vector<int>>& routes_); // no use so far
 

@@ -9,6 +9,9 @@
 #include <algorithm>
 #include <iterator>
 #include <deque>
+#include <iostream>
+#include <vector>
+#include <memory>
 #include "case.hpp"
 #include "individual.hpp"
 #include "utils.hpp"
@@ -31,12 +34,22 @@ public:
     void flush_row_into_evol_log() override;
     void close_log_for_evolution() override;
     void save_log_for_solution() override;
-    shared_ptr<Individual> admit_one_immigrant(const vector<int>& chromosome);
+    shared_ptr<Individual> admit_one_individual(const vector<int>& chromosome);
+    shared_ptr<Individual> select_best_individual(const vector<shared_ptr<Individual>>& individuals);
+    vector<int> get_immigrant_chromosome(std::default_random_engine& rng) const;
+    static vector<double> extract_fitness_values(const vector<shared_ptr<Individual>>& individuals);
+    static double calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values);
+    static vector<int> select_random(int length, int k, std::default_random_engine& rng); // select k random indexes from 0 to length-1
+    void cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine& rng);
+    void mut_shuffle_indexes(vector<int>& chromosome, double independent_prob, std::default_random_engine& rng);
 
 
     Case* instance;
     vector<shared_ptr<Individual>> population;
+    unique_ptr<Individual> global_best;
 
+    uniform_int_distribution<int> uniform_int_dist;
+    uniform_int_distribution<int> uniform_swap_dist;
     int stop_criteria_option; // 0 for max-evals, 1 for max-exec-time
     bool enable_logging; // a flag to control logging
     int route_cap;

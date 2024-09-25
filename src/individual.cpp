@@ -8,6 +8,7 @@
 Individual::Individual(const Individual& ind) {
     this->route_cap = ind.route_cap;
     this->node_cap = ind.node_cap;
+    this->chromosome_length = ind.chromosome_length;
     this->num_routes = ind.num_routes;
     this->upper_cost = ind.upper_cost;
     this->lower_cost = ind.lower_cost;
@@ -30,6 +31,7 @@ Individual::Individual(const Individual& ind) {
 Individual::Individual(int route_cap, int node_cap) {
     this->route_cap = route_cap;
     this->node_cap = node_cap;
+    this->chromosome_length = this->node_cap - 1;
     this->routes = new int *[route_cap];
     this->lower_routes = new int *[route_cap];
     for (int i = 0; i < route_cap; ++i) {
@@ -85,6 +87,17 @@ void Individual::start_lower_solution() const {
 
 void Individual::set_lower_cost(double lower_cost_) {
     this->lower_cost = lower_cost_;
+}
+
+vector<int> Individual::get_chromosome() const {
+    vector<int> chromosome;
+    chromosome.reserve(chromosome_length);
+    for (int i = 0; i < num_routes; ++i) {
+        for (int j = 1; j < num_nodes_per_route[i] - 1; ++j) {
+            chromosome.push_back(routes[i][j]);
+        }
+    }
+    return std::move(chromosome);
 }
 
 //void Individual::set_lower_routes(const vector<vector<int>> &lower_routes_) {

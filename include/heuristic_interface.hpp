@@ -13,12 +13,12 @@
 using namespace std;
 
 class HeuristicInterface {
-protected:
+public:
     string name;
     int seed;
-    std::default_random_engine random_engine;
     uniform_real_distribution<double> uniform_real_dist;
-public:
+    std::default_random_engine random_engine;
+
     // Constructor to initialize member variables
     HeuristicInterface(string heuristic_name, int seed_value)
             : name(std::move(heuristic_name)),
