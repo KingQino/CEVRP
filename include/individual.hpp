@@ -40,6 +40,7 @@ public:
     void start_lower_solution() const;
     void set_lower_cost(double lower_cost_);
     [[nodiscard]] vector<int> get_chromosome() const;
+    void cleanup() const;
 
 //    void set_lower_routes(const vector<vector<int>>& lower_routes_);
 //    void set_routes(const vector<vector<int>>& routes_); // no use so far

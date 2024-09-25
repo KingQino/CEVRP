@@ -447,6 +447,7 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
     }
     delete[] tempr;
     delete[] tempr2;
+    individual.cleanup();
     return updated;
 }
 

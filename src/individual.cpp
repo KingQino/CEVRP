@@ -78,6 +78,17 @@ Individual::~Individual() {
     delete[] this->demand_sum_per_route;
 }
 
+void Individual::cleanup() const {
+    memset(this->num_nodes_per_route + this->num_routes, 0, sizeof(int) * (this->route_cap - this->num_routes));
+    memset(this->demand_sum_per_route + this->num_routes, 0, sizeof(int) * (this->route_cap - this->num_routes));
+    for (int i = 0; i < this->num_routes; ++i) {
+        memset(this->routes[i] + this->num_nodes_per_route[i], 0, sizeof(int) * (this->node_cap - this->num_nodes_per_route[i]));
+    }
+    for (int i = this->num_routes; i < this->route_cap; ++i) {
+        memset(this->routes[i], 0, sizeof(int) * this->node_cap);
+    }
+}
+
 void Individual::start_lower_solution() const {
     for (int i = 0; i < this->route_cap; ++i) {
         memcpy(this->lower_routes[i], this->routes[i], sizeof(int) * this->node_cap);

@@ -76,9 +76,8 @@ TEST_F(MaTest, MutShuffleIndexes) {
 TEST_F(MaTest, Run) {
     ma->run();
 
-    cout << *ma->global_best << endl;
-//    EXPECT_EQ(ma->population.size(), 100);
-//    EXPECT_EQ(ma->global_best->num_routes, 5);
-//    EXPECT_DOUBLE_EQ(ma->global_best->upper_cost, 569.47817556079303);
-//    EXPECT_EQ(ma->global_best->num_nodes_per_route[0], 5);
+    EXPECT_GE(instance->evals_, instance->max_evals_);
+    EXPECT_EQ(ma->population.size(), 100);
+    EXPECT_EQ(ma->global_best->num_routes, 4);
+    EXPECT_NEAR(ma->global_best->lower_cost, 384.678, 0.0001);
 }

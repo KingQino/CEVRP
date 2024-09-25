@@ -110,11 +110,6 @@ void Ma::run_heuristic() {
 
     vector<vector<int>> local_optimised_pool;
     local_optimised_pool.reserve(pop_size);
-    for (auto& ind: population) {
-        if (ind->chromosome_length == 0) {
-            cout << "Chromosome length is 0" << endl;
-        }
-    }
     for(auto& ind : population) {
         local_optimised_pool.push_back(ind->get_chromosome());
     }
