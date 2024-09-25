@@ -3,6 +3,8 @@ project(CEVRP)
 
 set(GOOGLETEST_VERSION 1.11.0)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3") # -O3 optimization argument
+
 
 set(DEPENDENCIES
         include/case.hpp
@@ -19,10 +21,10 @@ set(DEPENDENCIES
 )
 
 
-add_executable(CEVRP main.cpp ${DEPENDENCIES})
+add_executable(Run main.cpp ${DEPENDENCIES})
 
 # Add include directories, so that the compiler can find the header files
-target_include_directories(CEVRP PRIVATE include external/include)
+target_include_directories(Run PRIVATE include external/include)
 
 add_subdirectory(external/googletest) # Add GoogleTest as a subdirectory
 add_executable(Tests tests/test_main.cpp

@@ -65,9 +65,10 @@ int main(int argc, char *argv[]) {
     }
 
     string stats_file_path = kStatsPath + "/" + static_cast<string>(enum_name(algorithm)) + "/" +
-            file_name.substr(0, file_name.find('.')) + "/" + "stats." + file_name;
+            file_name.substr(0, file_name.find('.'));
 
-    StatsInterface::stats_for_multiple_trials(stats_file_path,perfOfTrials);
+    StatsInterface::create_directories_if_not_exists(stats_file_path);
+    StatsInterface::stats_for_multiple_trials(stats_file_path + "/" + "stats." + file_name,perfOfTrials);
 
     return 0;
 }
