@@ -227,7 +227,7 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
         }
 
         int cur = route.back();
-        uniform_int_distribution<> distribution(0, all_temp.size() - 1);
+        uniform_int_distribution<> distribution(0, static_cast<int>(all_temp.size()) - 1);
         int next = all_temp[distribution(rng)]; // int next = roulette_wheel_selection(all_temp, cur);
         route.push_back(next);
 

@@ -223,7 +223,7 @@ shared_ptr<Individual> Ma::admit_one_individual(const vector<int>& chromosome) {
 
     int route_index = 0;
 
-    auto j = chromosome.size();
+    int j = static_cast<int>(chromosome.size());
     while (true) {
         int i = split_path[j];
 

@@ -19,15 +19,16 @@
    # Explanation
    # ./Run <algorithm: 0-CBMA, 1-LAHC> <problem_instance_filename> <enable_logging: 0-no, 1-yes> <stop_criteria: 0 max-evals, 1 max-time> <multithreading: 0 no, 1 yes> 
    ```
+
 3. Third step - HPC run 
 
    ```shell
    ml load CMake/3.18.4 GCC/13.2.0
    sbatch script.slurm 
    ```
-   
+
    `./build/script.slurm`
-   
+
    ```shell
    #!/bin/bash
    
@@ -49,9 +50,9 @@
    
    srun ./Run 0 "$CASE" 1 0 1 
    ```
-   
+
    `./build/parameters.txt`
-   
+
    ```shell
    E-n22-k4.evrp
    E-n23-k3.evrp
@@ -72,6 +73,25 @@
    X-n1001-k43.evrp
    ```
 
+4. Fourth step - collect experiment results
+
+   Objective values - `.stats/algorithm/`
+
+   ```shell
+   ls | grep -v objective.sh | awk -F'-' '{print $0"\t"substr($2, 2)}' | sort -t $'\t'  -k2n | awk -F'\t' '{print "tail -n 3 "$1"/stats.*"}' > objective.sh
+   sh objective.sh
+   ```
+
+   convergence curve - 
+
+   ```shell
+   
+   ```
+
 ## Experiments :deer:
 
-- There are a number of conditions that affect our experiment results, including `stop_criteria`, `a`
+- There are a number of conditions that affect our experiment results, including `stop_criteria`, `adaptive selection`, `filters`, `search acceleration`, `neighborhood expanding`, `local search operators combination & sequence`, `fine-tunning`, etc. 
+
+  > How to design our experiments and organize our Excel table to collect results?
+
+- 
