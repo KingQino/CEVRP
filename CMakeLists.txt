@@ -28,6 +28,11 @@ add_executable(Run main.cpp ${DEPENDENCIES})
 # Add include directories, so that the compiler can find the header files
 target_include_directories(Run PRIVATE include external/include)
 
+# Link pthread
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(Run PRIVATE Threads::Threads)
+
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     add_subdirectory(external/googletest) # Add GoogleTest as a subdirectory
     add_executable(Tests tests/test_main.cpp
