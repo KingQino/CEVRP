@@ -23,9 +23,11 @@
 
    ```shell
    ml load CMake/3.18.4 GCC/13.2.0
+   sbatch script.slurm 
    ```
-
+   
    `./build/script.slurm`
+   
    ```shell
    #!/bin/bash
    
@@ -39,16 +41,17 @@
    #SBATCH --mem-per-cpu=1G                # Memory per CPU
    #SBATCH --account=su008-exx866
    #SBATCH --array=0-16
-
+   
    module load GCC/13.2.0
-
+   
    mapfile -t cases < parameters.txt
    CASE="${cases[$SLURM_ARRAY_TASK_ID]}"
-
+   
    srun ./Run 0 "$CASE" 1 0 1 
    ```
    
    `./build/parameters.txt`
+   
    ```shell
    E-n22-k4.evrp
    E-n23-k3.evrp
@@ -68,3 +71,7 @@
    X-n916-k207.evrp
    X-n1001-k43.evrp
    ```
+
+## Experiments :deer:
+
+- There are a number of conditions that affect our experiment results, including `stop_criteria`, `a`

@@ -111,25 +111,6 @@ vector<int> Individual::get_chromosome() const {
     return std::move(chromosome);
 }
 
-//void Individual::set_lower_routes(const vector<vector<int>> &lower_routes_) {
-//    for (int i = 0; i < static_cast<int>(lower_routes_.size()); ++i) {
-//        this->lower_num_nodes_per_route[i] = static_cast<int>(lower_routes_[i].size());
-//        for (int j = 0; j < this->lower_num_nodes_per_route[i]; ++j) {
-//            this->lower_routes[i][j] = lower_routes_[i][j];
-//        }
-//    }
-//}
-
-//void Individual::set_routes(const vector<vector<int>>& routes_) {
-//    this->num_routes = static_cast<int>(routes_.size());
-//    for (int i = 0; i < this->num_routes; ++i) {
-//        this->num_nodes_per_route[i] = static_cast<int>(routes_[i].size());
-//        for (int j = 0; j < this->num_nodes_per_route[i]; ++j) {
-//            this->routes[i][j] = routes_[i][j];
-//        }
-//    }
-//}
-
 std::ostream& operator<<(std::ostream& os, const Individual& individual) {
     os << "Route Capacity: " << individual.route_cap << "\n";
     os << "Node Capacity: " << individual.node_cap << "\n";
