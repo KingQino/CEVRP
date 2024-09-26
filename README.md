@@ -21,6 +21,10 @@
    ```
 3. Third step - HPC run 
 
+   ```shell
+   ml load CMake/3.18.4 GCC/13.2.0
+   ```
+
    `./build/script.slurm`
    ```shell
    #!/bin/bash
