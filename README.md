@@ -10,7 +10,13 @@
    cmake -DCMAKE_BUILD_TYPE=Release ..
    make
    ```
-
+   In case running `Valgrind` for memory leak check
+   
+   ```shell
+   ml load valgrind cmake gcc
+   cmake -DCMAKE_BUILD_TYPE=Debug ..
+   make valgrind_tests
+    ```
 2. Second step - run
 
    ```shell

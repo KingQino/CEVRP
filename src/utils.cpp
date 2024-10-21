@@ -45,7 +45,7 @@ pair<vector<int>, double> classical_split(const vector<int>& chromosome, Case& i
         } while (!(j >= x.size() || load > instance.max_vehicle_capa_));
     }
 
-    return {pp, vv[x.size() - 1]};
+    return {std::move(pp), vv[x.size() - 1]};
 }
 
 // Prins, C., 2004. A simple and effective evolutionary algorithm for the vehicle routing problem. Computers & operations research, 31(12), pp.1985-2002.
@@ -133,7 +133,7 @@ vector<vector<int>> hien_clustering(const Case& instance, std::default_random_en
 
     tours.push_back(tour);
 
-    return tours;
+    return std::move(tours);
 }
 
 void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::default_random_engine& rng) {
@@ -199,7 +199,7 @@ vector<vector<int>> routes_constructor_with_hien_method(const Case& instance, st
         route.push_back(0);
     }
 
-    return routes;
+    return std::move(routes);
 }
 
 // Jia Ya-Hui, et al., "Confidence-Based Ant Colony Optimization for Capacitated Electric Vehicle Routing Problem With Comparison of Different Encoding Schemes", 2022
@@ -253,6 +253,7 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
 /****************************************************************/
 
 void two_opt_for_single_route(int* route, int length, double& cost, Case& instance) {
+    if (length < 5) return;
     bool improved = true;
 
     while (improved) {
