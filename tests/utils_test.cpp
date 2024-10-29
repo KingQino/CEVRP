@@ -172,6 +172,7 @@ TEST_F(UtilsTest, OnePointMoveIntraRouteForIndividual) {
     double fit_cur = ind->upper_cost;
 
     EXPECT_LT(fit_cur, fit_prev);
+    EXPECT_DOUBLE_EQ(fit_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
 }
 
 TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {

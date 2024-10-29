@@ -446,48 +446,28 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
     return updated;
 }
 
-bool node_shift(int* route, int length, double& cost, Case& instance) {
-    if (length <= 4) return false;
-    double min_change = 0;
-    bool flag = false;
-    do
-    {
-        min_change = 0;
-        int mini = 0, minj = 0;
-        for (int i = 1; i < length - 1; i++) {
-            for (int j = 1; j < length - 1; j++) {
-                if (i < j) {
-                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j], route[j + 1]);
-                    double xx2 = instance.get_distance(route[i - 1], route[i + 1]) + instance.get_distance(route[j], route[i]) + instance.get_distance(route[i], route[j + 1]);
-                    double change = xx1 - xx2;
-                    if (fabs(change) < 0.00000001) change = 0;
-                    if (min_change < change) {
-                        min_change = change;
-                        mini = i;
-                        minj = j;
-                        flag = true;
-                    }
-                }
-                else if (i > j) {
-                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j - 1], route[j]);
-                    double xx2 = instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j]) + instance.get_distance(route[i - 1], route[i + 1]);
-                    double change = xx1 - xx2;
-                    if (fabs(change) < 0.00000001) change = 0;
-                    if (min_change < change) {
-                        min_change = change;
-                        mini = i;
-                        minj = j;
-                        flag = true;
-                    }
-                }
+void node_shift(int* route, int length, double& cost, Case& instance) {
+    if (length <= 4) return;
+
+    double old_cost, new_cost;
+    for (int i = 1; i < length - 1; i++) {
+        for (int j = 1; j < length - 1; j++) {
+            if (i == j) continue;
+
+            if (i < j) {
+                old_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j], route[j + 1]);
+                new_cost = instance.get_distance(route[i - 1], route[i + 1]) + instance.get_distance(route[j], route[i]) + instance.get_distance(route[i], route[j + 1]);
+            } else {
+                old_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j - 1], route[j]);
+                new_cost = instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j]) + instance.get_distance(route[i - 1], route[i + 1]);
+            }
+
+            if (new_cost < old_cost) {
+                moveItoJ(route, i, j);
+                cost -= (old_cost - new_cost);
             }
         }
-        if (min_change > 0) {
-            moveItoJ(route, mini, minj);
-            cost -= min_change;
-        }
-    } while (min_change > 0);
-    return flag;
+    }
 }
 
 void moveItoJ(int* route, int a, int b) {
