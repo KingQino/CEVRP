@@ -136,7 +136,7 @@ TEST_F(UtilsTest, TwoOptForIndividual) {
 
     two_opt_for_individual(*ind, *instance);
 
-    EXPECT_EQ(ind->upper_cost, 385.2853879430639);
+    EXPECT_DOUBLE_EQ(ind->upper_cost, 392.23351570689545);
 }
 
 TEST_F(UtilsTest, TwoOptStarForIndividual) {

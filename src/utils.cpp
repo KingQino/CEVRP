@@ -254,26 +254,20 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
 
 void two_opt_for_single_route(int* route, int length, double& cost, Case& instance) {
     if (length < 5) return;
-    bool improved = true;
 
-    while (improved) {
-        improved = false;
+    for (size_t i = 1; i < length - 2; ++i) {
+        for (size_t j = i + 1; j < length - 1; ++j) {
+            // Calculate the cost difference between the old route and the new route obtained by swapping edges
+            double old_cost = instance.get_distance(route[i - 1], route[i]) +
+                              instance.get_distance(route[j], route[j + 1]);
 
-        for (size_t i = 1; i < length - 2; ++i) {
-            for (size_t j = i + 1; j < length - 1; ++j) {
-                // Calculate the cost difference between the old route and the new route obtained by swapping edges
-                double old_cost = instance.get_distance(route[i - 1], route[i]) +
-                                  instance.get_distance(route[j], route[j + 1]);
+            double new_cost = instance.get_distance(route[i - 1], route[j]) +
+                              instance.get_distance(route[i], route[j + 1]);
 
-                double new_cost = instance.get_distance(route[i - 1], route[j]) +
-                                  instance.get_distance(route[i], route[j + 1]);
-
-                if (new_cost < old_cost) {
-                    // The cost variation should be considered
-                    reverse(route + i, route + j + 1);
-                    improved = true;
-                    cost += new_cost - old_cost;
-                }
+            if (new_cost < old_cost) {
+                // The cost variation should be considered
+                reverse(route + i, route + j + 1);
+                cost += new_cost - old_cost;
             }
         }
     }
