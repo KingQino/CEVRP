@@ -114,8 +114,11 @@ vector<vector<int>> hien_clustering(const Case& instance, std::default_random_en
         tour.push_back(anchor);
         int cap = instance.get_customer_demand_(anchor);
 
-        const vector<int> &nearby_customers = instance.customer_to_cluster_map_.at(anchor);
-        for (int node: nearby_customers) {
+        int* nearby_customers = instance.sorted_nearby_customers[anchor];
+        int length = instance.num_customer_ - 1; // the size of nearby_customers
+
+        for (int i = 0; i < length; ++i) {
+            int node = nearby_customers[i];
             auto it = find(customers_.begin(), customers_.end(), node);
             if (it == customers_.end()) {
                 continue;
@@ -147,7 +150,11 @@ void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::defa
         cap1 += instance.get_customer_demand_(node);
     }
 
-    for (int x : instance.customer_to_cluster_map_.at(customer)) {
+    int size = instance.num_customer_ - 1; // the size of nearby_customers
+
+    for (int i = 0; i < size; ++i) {
+        int x = instance.sorted_nearby_customers[customer][i];
+
         if (find(lastRoute.begin(), lastRoute.end(), x) != lastRoute.end()) {
             continue;
         }

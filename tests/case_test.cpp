@@ -27,7 +27,10 @@ TEST_F(CaseTest, Init) {
     SCOPED_TRACE("Case init...");
     EXPECT_EQ(instance->customers_.size(), 21);
     EXPECT_EQ(instance->stations_.size(), 8);
-    EXPECT_EQ(instance->customer_to_cluster_map_[1], customerOne2CustomerListNearToFar);
+    EXPECT_EQ(instance->sorted_nearby_customers[1][0], 2);
+    EXPECT_EQ(instance->sorted_nearby_customers[1][1], 6);
+    EXPECT_EQ(instance->sorted_nearby_customers[1][2], 5);
+    EXPECT_EQ(instance->sorted_nearby_customers[1][instance->num_customer_ - 2], 21);
     EXPECT_EQ(instance->best_station_[1][13], 24);
     EXPECT_EQ(instance->best_station_[0][21], 22);
     EXPECT_EQ(instance->best_station_[5][6], 29);

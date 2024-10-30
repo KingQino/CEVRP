@@ -33,7 +33,7 @@ public:
     ~Case();
     void read_problem(const string& file_path);					//reads .evrp file
     static double **generate_2D_matrix_double(int n, int m);
-    void init_customer_to_customers_maps(); // initialize customer_to_cluster_map_ and customer_to_restricted_candidate_list_map_
+//    void init_customer_to_customers_maps(); // initialize customer_to_cluster_map_ and customer_to_restricted_candidate_list_map_
     void init_customer_nearest_station_map();
     double euclidean_distance(int i, int j);
     [[nodiscard]] int get_best_station(int from, int to) const;
@@ -73,9 +73,9 @@ public:
     double** distances_{};
     int** best_station_{}; // "best_station_" is designed for two customers, bringing the minimum extra cost.
     int** sorted_nearby_customers{};  // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {index 1: [5,3,2,6], index 2: [], ...}
-    unordered_map<int, vector<int>> customer_to_cluster_map_; // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {1: [5,3,2,6], 2: [], ...}
+    // key: customer id, value: a list of customer nodes from near to far (size = num_customer - 1)
+//    unordered_map<int, vector<int>> customer_to_cluster_map_; // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {1: [5,3,2,6], 2: [], ...}
     int restricted_candidate_list_size_{}; // min{num_customer_/2, 40}
-    unordered_map<int, set<int>> customer_to_restricted_candidate_list_map_; // search acceleration technique proposed in TAMLS
     unordered_map<int, pair<int, double>> customer_to_nearest_station_map_; // for each customer, find the nearest station and store the corresponding distance
     double evals_{};
     double max_evals_{};

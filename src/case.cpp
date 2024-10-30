@@ -146,7 +146,6 @@ void Case::read_problem(const std::string &filePath) {
     }
     this->restricted_candidate_list_size_ = min(num_customer_ / 2, 40);
 
-    init_customer_to_customers_maps();
     init_customer_nearest_station_map();
 
     this->evals_ = 0.0;
@@ -226,26 +225,19 @@ double Case::get_distance(int from, int to) {
     return distances_[from][to];
 }
 
-void Case::init_customer_to_customers_maps() {
-    this->restricted_candidate_list_size_ = min(num_customer_ / 2, 40);
-
-    for (int node : customers_) {
-        // Create a sorted list of other customers_ based on the distance to the current node
-        vector<int> other_customers = customers_;
-        other_customers.erase(remove(other_customers.begin(), other_customers.end(), node), other_customers.end());
-
-        sort(other_customers.begin(), other_customers.end(), [&](int i, int j) {
-            return distances_[node][i] < distances_[node][j];
-        });
-
-        customer_to_cluster_map_[node] = other_customers;
-
-        // Create the restricted candidate list
-        customer_to_restricted_candidate_list_map_[node] = std::set<int>(
-                other_customers.begin(), other_customers.begin() + restricted_candidate_list_size_
-        );
-    }
-}
+//void Case::init_customer_to_customers_maps() {
+//    for (int node : customers_) {
+//        // Create a sorted list of other customers_ based on the distance to the current node
+//        vector<int> other_customers = customers_;
+//        other_customers.erase(remove(other_customers.begin(), other_customers.end(), node), other_customers.end());
+//
+//        sort(other_customers.begin(), other_customers.end(), [&](int i, int j) {
+//            return distances_[node][i] < distances_[node][j];
+//        });
+//
+//        customer_to_cluster_map_[node] = other_customers;
+//    }
+//}
 
 void Case::init_customer_nearest_station_map() {
     for (int i = 1; i <= num_customer_; ++i) {
