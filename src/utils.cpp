@@ -273,6 +273,43 @@ void two_opt_for_single_route(int* route, int length, double& cost, Case& instan
     }
 }
 
+bool contains(const int* array, int size, int element) {
+    for (int i = 0; i < size; i++) {
+        if (array[i] == element) {
+            return true;  // Element found
+        }
+    }
+    return false;  // Element not found
+}
+
+void two_opt_for_single_route_acceleration(int* route, int length, double& cost, Case& instance) {
+    if (length < 5) return;
+    int size = instance.restricted_candidate_list_size_;
+
+    for (size_t i = 1; i < length - 2; ++i) {
+        for (size_t j = i + 1; j < length - 1; ++j) {
+
+            if (!contains(instance.sorted_nearby_customers[route[i - 1]], size, route[j]) ||
+                !contains(instance.sorted_nearby_customers[route[i]], size, route[j + 1])) {
+                continue; // restricted candidates check
+            }
+
+            // Calculate the cost difference between the old route and the new route obtained by swapping edges
+            double old_cost = instance.get_distance(route[i - 1], route[i]) +
+                              instance.get_distance(route[j], route[j + 1]);
+
+            double new_cost = instance.get_distance(route[i - 1], route[j]) +
+                              instance.get_distance(route[i], route[j + 1]);
+
+            if (new_cost < old_cost) {
+                // The cost variation should be considered
+                reverse(route + i, route + j + 1);
+                cost += new_cost - old_cost;
+            }
+        }
+    }
+}
+
 // Croes, Georges A. "A method for solving traveling-salesman problems." Operations research 6, no. 6 (1958): 791-812.
 void two_opt_for_individual(Individual& individual, Case& instance) {
     for (int i = 0; i < individual.num_routes; ++i) {

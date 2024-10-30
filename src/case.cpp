@@ -23,6 +23,10 @@ Case::~Case() {
         delete[] this->best_station_[i];
     }
     delete[] this->best_station_;
+    for (int i = 0; i < num_customer_ + 1; ++i) {
+        delete[] sorted_nearby_customers[i];
+    }
+    delete[] sorted_nearby_customers;
 }
 
 void Case::read_problem(const std::string &filePath) {
@@ -124,6 +128,23 @@ void Case::read_problem(const std::string &filePath) {
             this->best_station_[i][j] = this->best_station_[j][i] = get_best_station(i, j);
         }
     }
+
+    sorted_nearby_customers = new int* [num_customer_ + 1];
+    for (int i = 0; i < num_customer_ + 1; i++) {
+        sorted_nearby_customers[i] = new int[num_customer_ - 1];
+    }
+    for (int i = 1; i <= num_customer_; i++) {
+        int idx = 0;
+        for(auto& node : customers_) {
+            if (node == i) continue;
+            sorted_nearby_customers[i][idx++] = node;
+        }
+
+        sort(sorted_nearby_customers[i], sorted_nearby_customers[i] + num_customer_ - 1, [&](int a, int b) {
+            return distances_[i][a] < distances_[i][b];
+        });
+    }
+    this->restricted_candidate_list_size_ = min(num_customer_ / 2, 40);
 
     init_customer_to_customers_maps();
     init_customer_nearest_station_map();

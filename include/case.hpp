@@ -72,6 +72,7 @@ public:
     int total_demand_{};
     double** distances_{};
     int** best_station_{}; // "best_station_" is designed for two customers, bringing the minimum extra cost.
+    int** sorted_nearby_customers{};  // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {index 1: [5,3,2,6], index 2: [], ...}
     unordered_map<int, vector<int>> customer_to_cluster_map_; // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {1: [5,3,2,6], 2: [], ...}
     int restricted_candidate_list_size_{}; // min{num_customer_/2, 40}
     unordered_map<int, set<int>> customer_to_restricted_candidate_list_map_; // search acceleration technique proposed in TAMLS
