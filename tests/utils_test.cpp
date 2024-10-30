@@ -139,7 +139,49 @@ TEST_F(UtilsTest, TwoOptForIndividual) {
     EXPECT_DOUBLE_EQ(ind->upper_cost, 392.23351570689545);
 }
 
+TEST_F(UtilsTest, TwoOptStarBetweenTwoRoutes) {
+    int* route1 = new int[22]{0, 19, 21, 20, 17, 0};
+    int* route2 = new int[22]{0, 12, 15, 18, 14, 16, 0};
+    int length1 = 6;
+    int length2 = 7;
+    int loading1 = 6000;
+    int loading2 = 5500;
+    int node_cap = individual->node_cap;
+    double cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+
+    bool updated = two_opt_star_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, node_cap, *instance);
+
+//    // print route1 and route2
+//    for (int i = 0; i < length1; ++i) {
+//        cout << route1[i] << " ";
+//    }
+//    cout << endl;
+//    for (int i = 0; i < length2; ++i) {
+//        cout << route2[i] << " ";
+//    }
+//    cout << endl;
+//    // print length1 and length2
+//    cout << "Length: " << length1 << " " << length2 << endl;
+//    // check the loading
+//    cout << "Loading: " << loading1 << " " << loading2 << endl;
+//    // print the fitness value
+//    cout << "Fitness value: " << cost << endl;
+//    double cost_validation = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+//    cout << "New Cost: " << cost_validation << endl;
+
+    EXPECT_TRUE(updated);
+    EXPECT_EQ(length1, 6);
+    EXPECT_EQ(length2, 7);
+    EXPECT_EQ(loading1, 5600);
+    EXPECT_EQ(loading2, 5900);
+    EXPECT_DOUBLE_EQ(cost, instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2));
+
+    delete[] route1;
+    delete[] route2;
+}
+
 TEST_F(UtilsTest, TwoOptStarForIndividual) {
+//    two_opt_move_inter_route_for_individual
     vector<vector<int>> routes = {
             {0, 9, 7, 5, 2, 1, 6, 8, 0},
             {0, 10, 3, 4, 11, 13, 0},
@@ -150,7 +192,7 @@ TEST_F(UtilsTest, TwoOptStarForIndividual) {
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
 
     double fit_prev = ind->upper_cost;
-    bool updated = two_opt_star_for_individual(*ind, *instance);
+    bool updated = two_opt_move_inter_route_for_individual(*ind, *instance);
     double fit_cur = ind->upper_cost;
 
     EXPECT_LT(fit_cur, fit_prev);
