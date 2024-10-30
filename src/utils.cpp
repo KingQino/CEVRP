@@ -291,6 +291,11 @@ unordered_set<pair<int, int>, pair_hash> get_route_pairs(int num_routes) {
     return route_pairs;
 }
 
+void update_route_pairs(unordered_set<pair<int, int>, pair_hash>& route_pairs, int r1, int r2) {
+    for (int i = 0; i < r1; i++) route_pairs.insert({i, r1});
+    for (int i = 0; i < r2; i++) route_pairs.insert({i, r2});
+}
+
 // Jia Ya-Hui, et al.
 bool two_opt_star_for_individual(Individual& individual, Case& instance) {
     if (individual.num_routes == 1) {
@@ -298,31 +303,33 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
     }
 
     unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
-    int* tempr = new int[individual.node_cap];
-    int* tempr2 = new int[individual.node_cap];
+    int* temp_r1 = new int[individual.node_cap];
+    int* temp_r2 = new int[individual.node_cap];
     bool updated = false;
-    bool updated2 = false;
+
     while (!route_pairs.empty())
     {
-        updated2 = false;
-        int r1 = route_pairs.begin()->first;
-        int r2 = route_pairs.begin()->second;
+        auto [r1, r2] = *route_pairs.begin();
         route_pairs.erase(route_pairs.begin());
-        int frdem = 0;
-        for (int n1 = 0; n1 < individual.num_nodes_per_route[r1] - 1; n1++) {
-            frdem += instance.get_customer_demand_(individual.routes[r1][n1]);
-            int srdem = 0;
+        int partial_dem_r1 = 0; // the partial demand of route r1, i.e., the head partial route
+
+        for (int n1 = 0; n1 < individual.num_nodes_per_route[r1] - 1 && !updated; n1++) {
+            partial_dem_r1 += instance.get_customer_demand_(individual.routes[r1][n1]);
+            int partial_dem_r2 = 0; // the partial demand of route r2
+
             for (int n2 = 0; n2 < individual.num_nodes_per_route[r2] - 1; n2++) {
-                srdem += instance.get_customer_demand_(individual.routes[r2][n2]);
-                if (frdem + individual.demand_sum_per_route[r2] - srdem <= instance.max_vehicle_capa_ && srdem + individual.demand_sum_per_route[r1] - frdem <= instance.max_vehicle_capa_) {
-                    double xx1 = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1]) +
-                                 instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
-                    double xx2 = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2 + 1]) +
-                                 instance.get_distance(individual.routes[r2][n2], individual.routes[r1][n1 + 1]);
-                    double change = xx1 - xx2;
-                    if (change > 0.00000001) {
+                partial_dem_r2 += instance.get_customer_demand_(individual.routes[r2][n2]);
+
+                if (partial_dem_r1 + individual.demand_sum_per_route[r2] - partial_dem_r2 <= instance.max_vehicle_capa_ && partial_dem_r2 + individual.demand_sum_per_route[r1] - partial_dem_r1 <= instance.max_vehicle_capa_) {
+                    double old_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1]) +
+                                      instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
+                    double new_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2 + 1]) +
+                                      instance.get_distance(individual.routes[r2][n2], individual.routes[r1][n1 + 1]);
+                    double change = old_cost - new_cost;
+                    if (change > 0.000'000'01) {
+                        // update individual
                         individual.upper_cost -= change;
-                        memcpy(tempr, individual.routes[r1], sizeof(int) * individual.node_cap);
+                        memcpy(temp_r1, individual.routes[r1], sizeof(int) * individual.node_cap);
                         int counter1 = n1 + 1;
                         for (int i = n2 + 1; i < individual.num_nodes_per_route[r2]; i++) {
                             individual.routes[r1][counter1] = individual.routes[r2][i];
@@ -330,27 +337,24 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                         }
                         int counter2 = n2 + 1;
                         for (int i = n1 + 1; i < individual.num_nodes_per_route[r1]; i++) {
-                            individual.routes[r2][counter2] = tempr[i];
+                            individual.routes[r2][counter2] = temp_r1[i];
                             counter2++;
                         }
                         individual.num_nodes_per_route[r1] = counter1;
                         individual.num_nodes_per_route[r2] = counter2;
-                        int newdemsum1 = frdem + individual.demand_sum_per_route[r2] - srdem;
-                        int newdemsum2 = srdem + individual.demand_sum_per_route[r1] - frdem;
-                        individual.demand_sum_per_route[r1] = newdemsum1;
-                        individual.demand_sum_per_route[r2] = newdemsum2;
-                        updated = true;
-                        updated2 = true;
-                        for (int i = 0; i < r1; i++) {
-                            route_pairs.insert({i, r1});
-                        }
-                        for (int i = 0; i < r2; i++) {
-                            route_pairs.insert({i, r2});
-                        }
+                        int new_dem_sum_1 = partial_dem_r1 + individual.demand_sum_per_route[r2] - partial_dem_r2;
+                        int new_dem_sum_2 = partial_dem_r2 + individual.demand_sum_per_route[r1] - partial_dem_r1;
+                        individual.demand_sum_per_route[r1] = new_dem_sum_1;
+                        individual.demand_sum_per_route[r2] = new_dem_sum_2;
+
+                        // update route pairs
+                        update_route_pairs(route_pairs, r1, r2);
+
+                        // remove empty routes
                         if (individual.demand_sum_per_route[r1] == 0) {
-                            int* tempp = individual.routes[r1];
+                            int* tmp = individual.routes[r1];
                             individual.routes[r1] = individual.routes[individual.num_routes - 1];
-                            individual.routes[individual.num_routes - 1] = tempp;
+                            individual.routes[individual.num_routes - 1] = tmp;
                             individual.demand_sum_per_route[r1] = individual.demand_sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r1] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
@@ -359,9 +363,9 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                             }
                         }
                         if (individual.demand_sum_per_route[r2] == 0) {
-                            int* tempp = individual.routes[r2];
+                            int* tmp = individual.routes[r2];
                             individual.routes[r2] = individual.routes[individual.num_routes - 1];
-                            individual.routes[individual.num_routes - 1] = tempp;
+                            individual.routes[individual.num_routes - 1] = tmp;
                             individual.demand_sum_per_route[r2] = individual.demand_sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r2] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
@@ -369,18 +373,20 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                                 route_pairs.erase({i, individual.num_routes});
                             }
                         }
+
+                        updated = true;
                         break;
                     }
                 }
-                else if (frdem + srdem <= instance.max_vehicle_capa_ && individual.demand_sum_per_route[r1] - frdem + individual.demand_sum_per_route[r2] - srdem <= instance.max_vehicle_capa_) {
-                    double xx1 = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1])
-                                 + instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
-                    double xx2 = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2])
-                                 + instance.get_distance(individual.routes[r1][n1 + 1], individual.routes[r2][n2 + 1]);
-                    double change = xx1 - xx2;
-                    if (change > 0.00000001) {
+                else if (partial_dem_r1 + partial_dem_r2 <= instance.max_vehicle_capa_ && individual.demand_sum_per_route[r1] - partial_dem_r1 + individual.demand_sum_per_route[r2] - partial_dem_r2 <= instance.max_vehicle_capa_) {
+                    double old_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1]) +
+                                      instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
+                    double new_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2]) +
+                                      instance.get_distance(individual.routes[r1][n1 + 1], individual.routes[r2][n2 + 1]);
+                    double change = old_cost - new_cost;
+                    if (change > 0.000'000'01) {
                         individual.upper_cost -= change;
-                        memcpy(tempr, individual.routes[r1], sizeof(int) * individual.node_cap);
+                        memcpy(temp_r1, individual.routes[r1], sizeof(int) * individual.node_cap);
                         int counter1 = n1 + 1;
                         for (int i = n2; i >= 0; i--) {
                             individual.routes[r1][counter1] = individual.routes[r2][i];
@@ -388,33 +394,28 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                         }
                         int counter2 = 0;
                         for (int i = individual.num_nodes_per_route[r1] - 1; i >= n1 + 1; i--) {
-                            tempr2[counter2] = tempr[i];
+                            temp_r2[counter2] = temp_r1[i];
                             counter2++;
                         }
                         for (int i = n2 + 1; i < individual.num_nodes_per_route[r2]; i++) {
-                            tempr2[counter2] = individual.routes[r2][i];
+                            temp_r2[counter2] = individual.routes[r2][i];
                             counter2++;
                         }
-                        memcpy(individual.routes[r2], tempr2, sizeof(int) * individual.node_cap);
+                        memcpy(individual.routes[r2], temp_r2, sizeof(int) * individual.node_cap);
                         individual.num_nodes_per_route[r1] = counter1;
                         individual.num_nodes_per_route[r2] = counter2;
 
-                        int newdemsum1 = frdem + srdem;
-                        int newdemsum2 = individual.demand_sum_per_route[r1] + individual.demand_sum_per_route[r2] - frdem - srdem;
-                        individual.demand_sum_per_route[r1] = newdemsum1;
-                        individual.demand_sum_per_route[r2] = newdemsum2;
-                        updated = true;
-                        updated2 = true;
-                        for (int i = 0; i < r1; i++) {
-                            route_pairs.insert({i, r1});
-                        }
-                        for (int i = 0; i < r2; i++) {
-                            route_pairs.insert({i, r2});
-                        }
+                        int new_dem_sum_1 = partial_dem_r1 + partial_dem_r2;
+                        int new_dem_sum_2 = individual.demand_sum_per_route[r1] + individual.demand_sum_per_route[r2] - partial_dem_r1 - partial_dem_r2;
+                        individual.demand_sum_per_route[r1] = new_dem_sum_1;
+                        individual.demand_sum_per_route[r2] = new_dem_sum_2;
+
+                        update_route_pairs(route_pairs, r1, r2);
+
                         if (individual.demand_sum_per_route[r1] == 0) {
-                            int* tempp = individual.routes[r1];
+                            int* tmp = individual.routes[r1];
                             individual.routes[r1] = individual.routes[individual.num_routes - 1];
-                            individual.routes[individual.num_routes - 1] = tempp;
+                            individual.routes[individual.num_routes - 1] = tmp;
                             individual.demand_sum_per_route[r1] = individual.demand_sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r1] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
@@ -423,9 +424,9 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                             }
                         }
                         if (individual.demand_sum_per_route[r2] == 0) {
-                            int* tempp = individual.routes[r2];
+                            int* tmp = individual.routes[r2];
                             individual.routes[r2] = individual.routes[individual.num_routes - 1];
-                            individual.routes[individual.num_routes - 1] = tempp;
+                            individual.routes[individual.num_routes - 1] = tmp;
                             individual.demand_sum_per_route[r2] = individual.demand_sum_per_route[individual.num_routes - 1];
                             individual.num_nodes_per_route[r2] = individual.num_nodes_per_route[individual.num_routes - 1];
                             individual.num_routes--;
@@ -433,15 +434,16 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
                                 route_pairs.erase({i, individual.num_routes});
                             }
                         }
+
+                        updated = true;
                         break;
                     }
                 }
             }
-            if (updated2) break;
         }
     }
-    delete[] tempr;
-    delete[] tempr2;
+    delete[] temp_r1;
+    delete[] temp_r2;
     individual.cleanup();
     return updated;
 }
@@ -583,7 +585,7 @@ void two_nodes_swap_for_single_route(int* route, int length, double& cost, Case&
                               + instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j + 1]);
             if (new_cost < old_cost) {
                 swap(route[i], route[j]);
-                cost -= old_cost - new_cost;
+                cost -= (old_cost - new_cost);
             }
         }
     }
@@ -614,7 +616,7 @@ bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, in
                     swap(route1[i], route2[j]);
                     loading1 = loading1 - demand_I + demand_J;
                     loading2 = loading2 - demand_J + demand_I;
-                    cost -= old_cost - new_cost;
+                    cost -= (old_cost - new_cost);
                 }
             }
         }

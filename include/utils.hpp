@@ -44,6 +44,7 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
 void two_opt_for_single_route(int* route, int length, double& cost, Case& instance);
 void two_opt_for_individual(Individual& individual, Case& instance); // two-arcs exchange, intra-route
 unordered_set<pair<int, int>, pair_hash> get_route_pairs(int num_routes);
+void update_route_pairs(unordered_set<pair<int, int>, pair_hash>& route_pairs, int r1, int r2);
 bool two_opt_star_for_individual(Individual& individual, Case& instance); // two-arcs exchange, inter-route
 bool node_shift(int* route, int length, double& cost, Case& instance);
 void moveItoJ(int* route, int a, int b);
