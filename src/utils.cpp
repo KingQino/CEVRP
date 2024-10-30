@@ -446,8 +446,8 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
     return updated;
 }
 
-void node_shift(int* route, int length, double& cost, Case& instance) {
-    if (length <= 4) return;
+bool node_shift(int* route, int length, double& cost, Case& instance) {
+    if (length <= 4) return false;
 
     double old_cost, new_cost;
     for (int i = 1; i < length - 1; i++) {
@@ -468,6 +468,8 @@ void node_shift(int* route, int length, double& cost, Case& instance) {
             }
         }
     }
+
+    return true;
 }
 
 void moveItoJ(int* route, int a, int b) {
@@ -496,48 +498,35 @@ void one_point_move_intra_route_for_individual(Individual& individual, Case& ins
 // Toth, Paolo, and Daniele Vigo. "The granular tabu search and its application to the vehicle-routing problem." Informs Journal on computing 15, no. 4 (2003): 333-346.
 bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, Case& instance) {
     if (length1 < 3 || length2 < 3) return false;
-    double min_change = 0;
-    bool flag = false;
-    do
-    {
-        min_change = 0;
-        int mini = 0, minj = 0;
-        for (int i = 1; i < length1 - 1; i++) {
-            // vehicle capacity constraint check
-            if (loading2 + instance.get_customer_demand_(route1[i]) > instance.max_vehicle_capa_) {
-                continue; // not satisfy the vehicle capacity constraint
-            } else {
-                for (int j = 0; j < length2 - 1; j++) {
-                    double xx1 = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1]) + instance.get_distance(route2[j], route2[j + 1]);
-                    double xx2 = instance.get_distance(route1[i - 1], route1[i + 1]) + instance.get_distance(route2[j], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
-                    double change = xx1 - xx2;
-                    if (fabs(change) < 0.00000001) change = 0;
-                    if (min_change < change) {
-                        min_change = change;
-                        mini = i;
-                        minj = j;
-                        flag = true;
-                    }
+
+    for (int i = 1; i < length1 - 1; i++) {
+        // vehicle capacity constraint check
+        if (loading2 + instance.get_customer_demand_(route1[i]) > instance.max_vehicle_capa_) continue;
+
+        for (int j = 0; j < length2 - 1; j++) {
+            double old_cost = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1]) + instance.get_distance(route2[j], route2[j + 1]);
+            double new_cost = instance.get_distance(route1[i - 1], route1[i + 1]) + instance.get_distance(route2[j], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
+
+            if (new_cost < old_cost) {
+                int x = route1[i];
+                for (int p = i; p < length1 - 1; p++) {
+                    route1[p] = route1[p + 1];
                 }
+                length1--;
+                loading1 -= instance.get_customer_demand_(x);
+                for (int q = length2; q > j + 1; q--) {
+                    route2[q] = route2[q - 1];
+                }
+                route2[j + 1] = x;
+                length2++;
+                loading2 += instance.get_customer_demand_(x);
+                cost -= (old_cost - new_cost);
+                return true;
             }
         }
-        if (min_change > 0) {
-            int x = route1[mini];
-            for (int i = mini; i < length1 - 1; i++) {
-                route1[i] = route1[i + 1];
-            }
-            length1--;
-            loading1 -= instance.get_customer_demand_(x);
-            for (int j = length2; j > minj + 1; j--) {
-                route2[j] = route2[j - 1];
-            }
-            route2[minj + 1] = x;
-            length2++;
-            loading2 += instance.get_customer_demand_(x);
-            cost -= min_change;
-        }
-    } while (min_change > 0);
-    return flag;
+    }
+
+    return false;
 }
 
 bool one_point_move_inter_route_for_individual(Individual& individual, Case& instance) {

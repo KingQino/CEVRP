@@ -183,7 +183,7 @@ TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
     int length2 = 7;
     int loading1 = 5800;
     int loading2 = 5200;
-    double cost = 0;
+    double cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
 
     node_shift_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, *instance);
 
@@ -203,34 +203,84 @@ TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
 //    cout << "Loading: " << loading1 << " " << loading2 << endl;
 //    // print the fitness value
 //    cout << "Fitness value: " << cost << endl;
+//    double cost_validation = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+//    cout << "New Cost: " << cost_validation << endl;
 
-
-    EXPECT_EQ(route2[1], 6);
+    EXPECT_EQ(route2[1], 10);
     EXPECT_EQ(length1, 8);
     EXPECT_EQ(length2, 8);
-    EXPECT_EQ(loading1, 5400);
-    EXPECT_EQ(loading2, 5600);
-    EXPECT_LT(cost, 0);
+    EXPECT_EQ(loading1, 5200);
+    EXPECT_EQ(loading2, 5800);
+    EXPECT_DOUBLE_EQ(cost, instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2));
+
+    int* route3 = new int[22]{ 0, 10, 17, 11, 7, 1, 6, 0}; //5100
+    int* route4 = new int[22]{ 0, 14, 12, 15, 20, 21, 0}; // 5000
+    int length3 = 8;
+    int length4 = 7;
+    int loading3 = 5100;
+    int loading4 = 5000;
+    double cost_34 = instance->compute_total_distance(route3, length3) + instance->compute_total_distance(route4, length4);
+
+    node_shift_between_two_routes(route3, route4, length3, length4, loading3, loading4, cost_34, *instance);
+
+    EXPECT_EQ(route3[1], 17);
+    EXPECT_EQ(length3, 7);
+    EXPECT_EQ(length4, 8);
+    EXPECT_EQ(loading3, 4500);
+    EXPECT_EQ(loading4, 5600);
+    EXPECT_DOUBLE_EQ(cost_34, instance->compute_total_distance(route3, length3) + instance->compute_total_distance(route4, length4));
 
     delete[] route1;
     delete[] route2;
+    delete[] route3;
+    delete[] route4;
 }
 
 TEST_F(UtilsTest, OnePointMoveInterRouteForIndividual) {
+    // interesting node: 6, demand_ 400
+    int* route1 = new int[22]{ 0, 10, 17, 11, 7, 1, 6, 0}; //5100
+    int* route2 = new int[22]{ 0, 14, 12, 15, 20, 21, 0}; // 5000
+    int length1 = 8;
+    int length2 = 7;
+    int loading1 = 5100;
+    int loading2 = 5000;
+    double cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+
+    node_shift_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, *instance);
+
+    // print route1 and route2
+//    for (int i = 0; i < length1; ++i) {
+//        cout << route1[i] << " ";
+//    }
+//    cout << endl;
+//    for (int i = 0; i < length2; ++i) {
+//        cout << route2[i] << " ";
+//    }
+//    cout << endl;
+//    // print length1 and length2
+//    cout << "Length: " << length1 << " " << length2 << endl;
+//    // check the loading
+//    cout << "Loading: " << loading1 << " " << loading2 << endl;
+//    // print the fitness value
+//    cout << "Fitness value: " << cost << endl;
+//    double cost_validation = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+//    cout << "New Cost: " << cost_validation << endl;
+//
+//    delete[] route1;
+//    delete[] route2;
+
     vector<vector<int>> routes = routes_constructor_with_split(*instance, rng);
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes,
                                                                instance->compute_total_distance(routes),
                                                                instance->compute_demand_sum_per_route(routes));
     double cost_prev = ind->upper_cost;
-    int num_of_routes_prev = ind->num_routes;
 
     one_point_move_inter_route_for_individual(*ind, *instance);
 
     double cost_cur = ind->upper_cost;
-    int num_of_routes_cur = ind->num_routes;
 
     EXPECT_LT(cost_cur, cost_prev);
-    EXPECT_LT(num_of_routes_cur, num_of_routes_prev);
+    EXPECT_DOUBLE_EQ(cost_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
 }
 
 TEST_F(UtilsTest, TwoPointMoveIntraRouteForIndividual) {
