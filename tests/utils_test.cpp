@@ -509,65 +509,150 @@ TEST_F(UtilsTest, InsertStationByRemoveArray) {
     }
 }
 
-TEST_F(UtilsTest, ComparisonOperatorsWithOrWithoutSearchAcceleration) {
-    vector<string> file_names = {"E-n22-k4.evrp", "X-n214-k11.evrp", "X-n1001-k43.evrp"};
+TEST_F(UtilsTest, ComparisonOperatorsWithOrWithoutSearchAccelerationForIntraOperators) {
+//    vector<string> file_names = {"E-n22-k4.evrp", "X-n214-k11.evrp", "X-n1001-k43.evrp"};
+//
+//    std::chrono::high_resolution_clock::time_point start{};
+//    std::chrono::duration<double> duration{};
+//
+//    int loop_base = 1'000;
+//    for (const auto& file_name : file_names) {
+//        cout << "File name: " << file_name << endl;
+//        Case* exp_instance = new Case(1, file_name);
+//
+//        vector<vector<int>> total_routes;
+//        for (int i = 0; i < loop_base; ++i) {
+//            vector<vector<int>> routes = routes_constructor_with_split(*exp_instance, rng);
+//            total_routes.insert(total_routes.end(), routes.begin(), routes.end());
+//        }
+//
+//        vector<vector<int>> backup_total_routes_1 = total_routes;
+//        vector<vector<int>> backup_total_routes_2 = total_routes;
+//
+//        // compare the efficiency of two operators - time used
+//        start = std::chrono::high_resolution_clock::now();
+//        for (auto& route: backup_total_routes_1) {
+//            double cost = 0;
+////            two_opt_for_single_route(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
+////            node_shift(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
+//            two_nodes_swap_for_single_route(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
+//        }
+//        duration = std::chrono::high_resolution_clock::now() - start;
+//        cout << "Time used for the original operator: " << duration.count() << " seconds" << endl;
+//        start = std::chrono::high_resolution_clock::now();
+//        for (auto& route: backup_total_routes_2) {
+//            double cost = 0;
+////            two_opt_for_single_route_acceleration(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
+////            node_shift_acceleration(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
+//            two_nodes_swap_for_single_route_acceleration(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
+//        }
+//        duration = std::chrono::high_resolution_clock::now() - start;
+//        cout << "Time used for the accelerated operator: " << duration.count() << " seconds" << endl;
+//
+//        // compare the effectiveness of two operators - fitness value
+//        int num_cost_accele_smaller_than_original = 0;
+//        int num_total_routes = static_cast<int>(total_routes.size());
+//        for(auto& route : total_routes) {
+//            vector<int> route_copy = route;
+//
+//            double cost_original = exp_instance->compute_total_distance(route);
+////            two_opt_for_single_route(route.data(), static_cast<int>(route.size()), cost_original, *exp_instance);
+////            node_shift(route.data(), static_cast<int>(route.size()), cost_original, *exp_instance);
+//            two_nodes_swap_for_single_route(route.data(), static_cast<int>(route.size()), cost_original, *exp_instance);
+//
+//            double cost_accelerated = exp_instance->compute_total_distance(route_copy);
+////            two_opt_for_single_route_acceleration(route_copy.data(), static_cast<int>(route_copy.size()), cost_accelerated, *exp_instance);
+////            node_shift_acceleration(route_copy.data(), static_cast<int>(route_copy.size()), cost_accelerated, *exp_instance);
+//            two_nodes_swap_for_single_route_acceleration(route_copy.data(), static_cast<int>(route_copy.size()), cost_accelerated, *exp_instance);
+//
+//            if (cost_accelerated < cost_original || cost_accelerated == cost_original) num_cost_accele_smaller_than_original++;
+//
+//            if (cost_accelerated - exp_instance->compute_total_distance(route_copy) > 0.000'000'001) {
+//                std::cerr << "Error!" << std::endl;
+//            }
+//        }
+//        cout << "Total number of routes: " << num_total_routes << endl;
+//        cout << "Number of routes that the accelerated operator performs better than original one: " << num_cost_accele_smaller_than_original << endl;
+//        cout << "Ratio of accelerated operator performs better than or equal to original one: " << (double)num_cost_accele_smaller_than_original / num_total_routes << endl;
+//        cout << endl;
+//
+//        delete exp_instance;
+//    }
 
-    std::chrono::high_resolution_clock::time_point start{};
-    std::chrono::duration<double> duration{};
+    EXPECT_TRUE(true);
+}
 
-    int loop_base = 1'000;
-    for (const auto& file_name : file_names) {
-        cout << "File name: " << file_name << endl;
-        Case* exp_instance = new Case(1, file_name);
+TEST_F(UtilsTest, ComparisonOperatorsWithOrWithoutSearchAccelerationForInterOperators) {
+//    vector<string> file_names = {"E-n22-k4.evrp", "X-n214-k11.evrp", "X-n1001-k43.evrp"};
+//
+//    std::chrono::high_resolution_clock::time_point start{};
+//    std::chrono::duration<double> duration{};
+//
+//    for (const auto& file_name : file_names) {
+//        cout << "File name: " << file_name << endl;
+//        Case* exp_instance = new Case(1, file_name);
+//
+//        int route_cap = 3 * exp_instance->num_vehicle_;
+//        int node_cap = exp_instance->num_customer_ + exp_instance->num_depot_;
+//        vector<shared_ptr<Individual>> population;
+//        for (int i = 0; i < 100; ++i) {
+//            vector<vector<int>> routes = routes_constructor_with_split(*exp_instance, rng);
+//            population.push_back(std::make_shared<Individual>(route_cap, node_cap, routes,
+//                                                              exp_instance->compute_total_distance(routes),
+//                                                              exp_instance->compute_demand_sum_per_route(routes)));
+//        }
+//
+//        vector<shared_ptr<Individual>> backup_population_1 = population;
+//        vector<shared_ptr<Individual>> backup_population_2 = population;
+//
+//        // compare the efficiency of two operators - time used
+//        start = std::chrono::high_resolution_clock::now();
+//        for (auto& ind : backup_population_1) {
+////            two_opt_move_inter_route_for_individual(*ind, *exp_instance);
+////            one_point_move_inter_route_for_individual(*ind, *exp_instance);
+//            two_point_move_inter_route_for_individual(*ind, *exp_instance);
+//        }
+//        duration = std::chrono::high_resolution_clock::now() - start;
+//        cout << "Time used for the original operator: " << duration.count() << " seconds" << endl;
+//        start = std::chrono::high_resolution_clock::now();
+//        for (auto& ind: backup_population_2) {
+////            two_opt_move_inter_route_for_individual_acceleration(*ind, *exp_instance);
+////            one_point_move_inter_route_for_individual_acceleration(*ind, *exp_instance);
+//            two_point_move_inter_route_for_individual_acceleration(*ind, *exp_instance);
+//        }
+//        duration = std::chrono::high_resolution_clock::now() - start;
+//        cout << "Time used for the accelerated operator: " << duration.count() << " seconds" << endl;
+//
+//
+//        // compare the effectiveness of two operators - fitness value
+//        int num_cost_accele_smaller_than_original = 0;
+//        for(auto& ind : population) {
+//            shared_ptr<Individual> ind_copy = make_shared<Individual>(*ind);
+//
+////            two_opt_move_inter_route_for_individual(*ind, *exp_instance);
+////            one_point_move_inter_route_for_individual(*ind, *exp_instance);
+//            two_point_move_inter_route_for_individual(*ind, *exp_instance);
+//
+////            two_opt_move_inter_route_for_individual_acceleration(*ind_copy, *exp_instance);
+////            one_point_move_inter_route_for_individual_acceleration(*ind_copy, *exp_instance);
+//            two_point_move_inter_route_for_individual_acceleration(*ind_copy, *exp_instance);
+//
+//
+//            if (ind_copy->upper_cost < ind->upper_cost || ind_copy->upper_cost == ind->upper_cost) num_cost_accele_smaller_than_original++;
+//
+//            double cost_validation = exp_instance->compute_total_distance(ind_copy->routes, ind_copy->num_routes, ind_copy->num_nodes_per_route);
+//            if (ind_copy->upper_cost - cost_validation > 0.000'001) {
+//                std::cerr << "Error!" << std::endl;
+//            }
+//        }
+//        cout << "Total number of routes: " << 100 << endl;
+//        cout << "Number of routes that the accelerated operator performs better than original one: " << num_cost_accele_smaller_than_original << endl;
+//        cout << "Ratio of accelerated operator performs better than or equal to original one: " << (double)num_cost_accele_smaller_than_original / 100 << endl;
+//
+//        cout << endl;
+//
+//        delete exp_instance;
+//    }
 
-        vector<vector<int>> total_routes;
-        for (int i = 0; i < loop_base; ++i) {
-            vector<vector<int>> routes = routes_constructor_with_split(*exp_instance, rng);
-            total_routes.insert(total_routes.end(), routes.begin(), routes.end());
-        }
-
-        vector<vector<int>> backup_total_routes_1 = total_routes;
-        vector<vector<int>> backup_total_routes_2 = total_routes;
-
-        // compare the efficiency of two operators - time used
-        start = std::chrono::high_resolution_clock::now();
-        for (auto& route: backup_total_routes_1) {
-            double cost = 0;
-            two_opt_for_single_route(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
-        }
-        duration = std::chrono::high_resolution_clock::now() - start;
-        cout << "Time used for the original operator: " << duration.count() << " seconds" << endl;
-        start = std::chrono::high_resolution_clock::now();
-        for (auto& route: backup_total_routes_2) {
-            double cost = 0;
-            two_opt_for_single_route_acceleration(route.data(), static_cast<int>(route.size()), cost, *exp_instance);
-        }
-        duration = std::chrono::high_resolution_clock::now() - start;
-        cout << "Time used for the accelerated operator: " << duration.count() << " seconds" << endl;
-
-        // compare the effectiveness of two operators - fitness value
-        int num_cost_accele_smaller_than_original = 0;
-        int num_total_routes = static_cast<int>(total_routes.size());
-        for(auto& route : total_routes) {
-            vector<int> route_copy = route;
-
-            double cost_original = exp_instance->compute_total_distance(route);
-            two_opt_for_single_route(route.data(), static_cast<int>(route.size()), cost_original, *exp_instance);
-
-            double cost_accelerated = exp_instance->compute_total_distance(route_copy);
-            two_opt_for_single_route_acceleration(route_copy.data(), static_cast<int>(route_copy.size()), cost_accelerated, *exp_instance);
-
-            if (cost_accelerated < cost_original) num_cost_accele_smaller_than_original++;
-
-            if (cost_accelerated - exp_instance->compute_total_distance(route_copy) > 0.000'000'001) {
-                std::cerr << "Error!" << std::endl;
-            }
-        }
-        cout << "Total number of routes: " << num_total_routes << endl;
-        cout << "Number of routes that the accelerated operator performs better than original one: " << num_cost_accele_smaller_than_original << endl;
-        cout << "Ratio of accelerated operator performs better than original one: " << (double)num_cost_accele_smaller_than_original / num_total_routes << endl;
-        cout << endl;
-
-        delete exp_instance;
-    }
+    EXPECT_TRUE(true);
 }
