@@ -324,6 +324,12 @@ void two_opt_for_individual(Individual& individual, Case& instance) {
     }
 }
 
+void two_opt_for_individual_acceleration(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; ++i) {
+        two_opt_for_single_route_acceleration(individual.routes[i],  individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
+}
+
 unordered_set<pair<int, int>, pair_hash> get_route_pairs(int num_routes) {
     unordered_set<pair<int, int>, pair_hash> route_pairs;
     for (int i = 0; i < num_routes - 1; i++) {
@@ -822,6 +828,12 @@ bool node_shift_acceleration(int* route, int length, double& cost, Case& instanc
     }
 
     return true;
+}
+
+void one_point_move_intra_route_for_individual_acceleration(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; i++) {
+        node_shift_acceleration(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
 }
 
 void moveItoJ(int* route, int a, int b) {

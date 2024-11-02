@@ -95,9 +95,9 @@ void Ma::run_heuristic() {
 
     for(auto& ind : population) {
         // upper-level optimisation
-        two_opt_for_individual(*ind, *instance);
-        two_opt_star_for_individual(*ind, *instance);
-        one_point_move_intra_route_for_individual(*ind, *instance);
+        two_opt_for_individual_acceleration(*ind, *instance);
+        two_opt_move_inter_route_for_individual_acceleration(*ind, *instance);
+        one_point_move_intra_route_for_individual_acceleration(*ind, *instance);
 
         // lower-level optimisation
         fix_one_solution(*ind, *instance);

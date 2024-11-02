@@ -63,9 +63,11 @@ bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, in
 bool two_point_move_inter_route_for_individual(Individual& individual, Case& instance); // four-arcs exchange, inter-route
 // accelerated version
 void two_opt_for_single_route_acceleration(int* route, int length, double& cost, Case& instance);
+void two_opt_for_individual_acceleration(Individual& individual, Case& instance);
 bool two_opt_star_between_two_routes_acceleration(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, int node_cap, Case& instance);
 bool two_opt_move_inter_route_for_individual_acceleration(Individual& individual, Case& instance);
 bool node_shift_acceleration(int* route, int length, double& cost, Case& instance);
+void one_point_move_intra_route_for_individual_acceleration(Individual& individual, Case& instance);
 bool node_shift_between_two_routes_acceleration(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, Case& instance);
 bool one_point_move_inter_route_for_individual_acceleration(Individual& individual, Case& instance);
 void two_nodes_swap_for_single_route_acceleration(int* route, int length, double& cost, Case& instance);
