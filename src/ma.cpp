@@ -80,7 +80,8 @@ bool Ma::stop_criteria_max_exec_time(const std::chrono::duration<double>& durati
 void Ma::initialize_heuristic() {
     // using clustering approach to initialize the population
     for (int i = 0; i < this->pop_size; ++i) {
-        vector<vector<int>> routes = routes_constructor_with_split(*instance, random_engine);
+        vector<vector<int>> routes = routes_constructor_with_direct_encoding(*instance, random_engine);
+//        vector<vector<int>> routes = routes_constructor_with_split(*instance, random_engine);
 
         population.push_back(std::make_unique<Individual>(route_cap, node_cap, routes,
                                                           instance->compute_total_distance(routes),
