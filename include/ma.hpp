@@ -42,6 +42,7 @@ public:
     static vector<double> extract_fitness_values(const vector<unique_ptr<Individual>>& individuals);
     static double calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values);
     static vector<int> select_random(int length, int k, std::default_random_engine& rng); // select k random indexes from 0 to length-1
+    vector<int> select_tournament(int k, int tournament_scale, std::default_random_engine& rng);
     void cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine& rng);
     void mut_shuffle_indexes(vector<int>& chromosome, double independent_prob, std::default_random_engine& rng);
 

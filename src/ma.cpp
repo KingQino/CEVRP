@@ -80,7 +80,8 @@ bool Ma::stop_criteria_max_exec_time(const std::chrono::duration<double>& durati
 void Ma::initialize_heuristic() {
     // using clustering approach to initialize the population
     for (int i = 0; i < this->pop_size; ++i) {
-        vector<vector<int>> routes = routes_constructor_with_hien_method(*instance, random_engine);
+        vector<vector<int>> routes = routes_constructor_with_split(*instance, random_engine);
+
         population.push_back(std::make_unique<Individual>(route_cap, node_cap, routes,
                                                           instance->compute_total_distance(routes),
                                                           instance->compute_demand_sum_per_route(routes)));
@@ -108,62 +109,24 @@ void Ma::run_heuristic() {
         global_best = make_unique<Individual>(iter_best); // create a new copy of the iter best
     }
 
+    vector<int> selected = select_tournament(pop_size, tournament_size, random_engine);
 
-    vector<vector<int>> local_optimised_pool;
-    local_optimised_pool.reserve(pop_size);
-    for(auto& ind : population) {
-        local_optimised_pool.push_back(ind->get_chromosome());
+    vector<vector<int>> selected_chromosomes;
+    selected_chromosomes.reserve(pop_size);
+    for (int i : selected) {
+        selected_chromosomes.push_back(population[i]->get_chromosome());
     }
 
-    vector<vector<int>> chromosomes;
-    chromosomes.reserve(pop_size);
-
-    // adaptive selection for crossover
-    diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
-    if (diversity > 0.5 ) {
-        // a value close to 1 indicates high diversity
-        int cx_count_between_elites = int(0.45 * pop_size);
-        int cx_count_between_elite_and_immigrant = int(0.05 * pop_size);
-        for (int i = 0; i < cx_count_between_elites; ++i) {
-            vector<int> selected_indices = select_random(pop_size, 2, random_engine);
-            vector<int> elite1(local_optimised_pool[selected_indices[0]]);
-            vector<int> elite2(local_optimised_pool[selected_indices[1]]);
-
-            cx_partially_matched(elite1, elite2, random_engine);
-
-            chromosomes.push_back(std::move(elite1));
-            chromosomes.push_back(std::move(elite2));
-        }
-        for (int i = 0; i < cx_count_between_elite_and_immigrant; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
-
-            cx_partially_matched(elite, immigrant, random_engine);
-
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
-        }
-    } else {
-        // a value near 0 indicates low diversity
-        int cx_count = int(0.5 * pop_size);
-
-        for (int i = 0; i < cx_count; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
-
-            cx_partially_matched(elite, immigrant, random_engine);
-
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
-        }
+    vector<vector<int>> offspring_chromosomes;
+    offspring_chromosomes.reserve(pop_size);
+    for (int i = 0; i < pop_size; i += 2) {
+        cx_partially_matched(selected_chromosomes[i], selected_chromosomes[i + 1], random_engine);
+        offspring_chromosomes.push_back(std::move(selected_chromosomes[i]));
+        offspring_chromosomes.push_back(std::move(selected_chromosomes[i + 1]));
     }
-
-    // mutation
-    for (auto& chromosome : chromosomes) {
+    for (int i = 0; i < pop_size; ++i) {
         if (uniform_real_dist(random_engine) < mutation_prob) {
-            mut_shuffle_indexes(chromosome, mutation_ind_prob, random_engine);
+            mut_shuffle_indexes(offspring_chromosomes[i], mutation_ind_prob, random_engine);
         }
     }
 
@@ -174,7 +137,7 @@ void Ma::run_heuristic() {
         // reset individual & update through chromosome
         population[i]->reset();
 
-        init_ind_by_chromosome(*population[i], chromosomes[i]);
+        init_ind_by_chromosome(*population[i], offspring_chromosomes[i]);
     }
 }
 
@@ -338,6 +301,24 @@ vector<int> Ma::select_random(int length, int k, std::default_random_engine &rng
     indices.resize(k);
 
     return std::move(indices);
+}
+
+vector<int> Ma::select_tournament(int k, int tournament_scale, std::default_random_engine& rng) {
+    vector<int> chosen;
+
+    for (int i = 0; i < k; ++i) {
+        vector<int> aspirants = select_random(pop_size, tournament_scale, rng);
+
+        // Assuming you have a fitness attribute in your Individual class
+        auto comparator = [&](const int& ind1, const int& ind2) {
+            return population[ind1]->upper_cost < population[ind2]->upper_cost;
+        };
+
+        auto minElement = min_element(aspirants.begin(), aspirants.end(), comparator);
+        chosen.push_back(*minElement);
+    }
+
+    return chosen;
 }
 
 void Ma::cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine &rng) {
