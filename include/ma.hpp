@@ -12,6 +12,7 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <cassert>
 #include "case.hpp"
 #include "individual.hpp"
 #include "utils.hpp"
@@ -34,10 +35,11 @@ public:
     void flush_row_into_evol_log() override;
     void close_log_for_evolution() override;
     void save_log_for_solution() override;
+    void init_ind_by_chromosome(Individual& ind, const vector<int>& chromosome) const;
     shared_ptr<Individual> admit_one_individual(const vector<int>& chromosome);
-    shared_ptr<Individual> select_best_individual(const vector<shared_ptr<Individual>>& individuals);
+    static Individual& select_best_individual_ref(const vector<unique_ptr<Individual>>& individuals);
     vector<int> get_immigrant_chromosome(std::default_random_engine& rng) const;
-    static vector<double> extract_fitness_values(const vector<shared_ptr<Individual>>& individuals);
+    static vector<double> extract_fitness_values(const vector<unique_ptr<Individual>>& individuals);
     static double calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values);
     static vector<int> select_random(int length, int k, std::default_random_engine& rng); // select k random indexes from 0 to length-1
     void cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine& rng);
@@ -45,7 +47,7 @@ public:
 
 
     Case* instance;
-    vector<shared_ptr<Individual>> population;
+    vector<unique_ptr<Individual>> population;
     unique_ptr<Individual> global_best;
     double diversity;
 

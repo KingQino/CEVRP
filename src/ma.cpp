@@ -81,7 +81,7 @@ void Ma::initialize_heuristic() {
     // using clustering approach to initialize the population
     for (int i = 0; i < this->pop_size; ++i) {
         vector<vector<int>> routes = routes_constructor_with_hien_method(*instance, random_engine);
-        population.push_back(std::make_shared<Individual>(route_cap, node_cap, routes,
+        population.push_back(std::make_unique<Individual>(route_cap, node_cap, routes,
                                                           instance->compute_total_distance(routes),
                                                           instance->compute_demand_sum_per_route(routes)));
     }
@@ -103,9 +103,9 @@ void Ma::run_heuristic() {
     }
 
     // iteration-best individual goes to the next iteration
-    shared_ptr<Individual> iter_best = select_best_individual(population); // create a new copy of the iter best
-    if (global_best->lower_cost > iter_best->lower_cost) {
-        global_best = make_unique<Individual>(*iter_best);
+    auto& iter_best = select_best_individual_ref(population);
+    if (global_best->lower_cost > iter_best.lower_cost) {
+        global_best = make_unique<Individual>(iter_best); // create a new copy of the iter best
     }
 
 
@@ -167,13 +167,14 @@ void Ma::run_heuristic() {
         }
     }
 
-    // free memory of population and refill it with new chromosomes
-    population.clear();
-    population.shrink_to_fit();
-    population.reserve(pop_size);
-    population.push_back(iter_best);
-    for (int i = 0; i < pop_size - 1; ++i) {
-        population.push_back(admit_one_individual(chromosomes[i]));
+    // update the population
+    for (int i = 0; i < pop_size; ++i) {
+        if (population[i].get() == &iter_best) continue; // Skip the best individual
+
+        // reset individual & update through chromosome
+        population[i]->reset();
+
+        init_ind_by_chromosome(*population[i], chromosomes[i]);
     }
 }
 
@@ -215,6 +216,35 @@ void Ma::save_log_for_solution() {
     log_solution.close();
 }
 
+void Ma::init_ind_by_chromosome(Individual &ind, const vector<int> &chromosome) const {
+    pair<vector<int>, double> result = classical_split(chromosome, *instance);
+    vector<int> split_path = result.first;
+
+    int route_index = 0;
+
+    int j = static_cast<int>(chromosome.size());
+    while (true) {
+        int i = split_path[j];
+
+        int customer_pos = 1;
+        for (auto it = chromosome.begin() + i; it < chromosome.begin() + j; ++it) {
+            ind.routes[route_index][customer_pos++] = *it;
+        }
+        ind.num_nodes_per_route[route_index] = customer_pos + 1;
+
+        route_index++; // Move to the next route
+
+        j = i;
+        if (i == 0) {
+            break;
+        }
+    }
+
+    ind.num_routes = route_index;
+    ind.upper_cost = result.second;
+    instance->compute_demand_sum_per_route(ind.routes, ind.num_routes, ind.num_nodes_per_route, ind.demand_sum_per_route);
+}
+
 shared_ptr<Individual> Ma::admit_one_individual(const vector<int>& chromosome) {
     pair<vector<int>, double> result = classical_split(chromosome, *instance);
     vector<int> split_path = result.first;
@@ -249,18 +279,16 @@ shared_ptr<Individual> Ma::admit_one_individual(const vector<int>& chromosome) {
     return std::move(ind_ptr);
 }
 
-shared_ptr<Individual> Ma::select_best_individual(const vector<shared_ptr<Individual>> &individuals) {
-    if (population.empty()) {
-        return nullptr;
-    }
+Individual& Ma::select_best_individual_ref(const vector<unique_ptr<Individual>>& individuals) {
+    assert(!individuals.empty());  // Ensure there's at least one individual
 
-    auto comparator = [](const shared_ptr<Individual>& ind1, const shared_ptr<Individual>& ind2) {
+    auto comparator = [](const unique_ptr<Individual>& ind1, const unique_ptr<Individual>& ind2) {
         return ind1->lower_cost < ind2->lower_cost;
     };
 
-    auto best_individual = std::min_element(population.begin(), population.end(), comparator);
+    auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
 
-    return *best_individual;
+    return **best_individual;
 }
 
 double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values) {
@@ -291,7 +319,7 @@ double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<dou
     return (2.0 * diversity_sum) / (N * (N - 1));
 }
 
-vector<double> Ma::extract_fitness_values(const vector<shared_ptr<Individual>>& individuals) {
+vector<double> Ma::extract_fitness_values(const vector<unique_ptr<Individual>>& individuals) {
     vector<double> fitness_values;
     fitness_values.reserve(individuals.size());
 

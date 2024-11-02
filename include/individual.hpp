@@ -41,6 +41,7 @@ public:
     void set_lower_cost(double lower_cost_);
     [[nodiscard]] vector<int> get_chromosome() const;
     void cleanup() const;
+    void reset();
 
     friend ostream& operator<<(ostream& os, const Individual& individual);
 };
