@@ -828,3 +828,89 @@ TEST_F(UtilsTest, NeighborExpanding_TwoPointMoveNeighbors) {
 
     EXPECT_GT(neighbors.size(), 0);
 }
+
+TEST_F(UtilsTest, NeighborExpanding_TwoOptIntraRouteForIndividual) {
+    vector<vector<int>> routes = {
+            {0, 2, 1, 5, 7, 6, 9, 0},
+            {0, 8, 3, 4, 11, 10, 13, 0},
+            {0, 21, 19, 17, 20, 0},
+            {0, 14, 16, 12, 15, 18, 0}
+    };
+    vector<int> demand_sum_per_route = {5600, 5400, 6000, 5500};
+    std::unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
+
+    vector<std::unique_ptr<Individual>> neighbors = two_opt_intra_route_for_individual(*ind, *instance, ind->upper_cost * 1.1);
+
+    for (auto& ind_ptr:neighbors) {
+        double cost_calculated = instance->compute_total_distance(ind_ptr->routes, ind_ptr->num_routes, ind_ptr->num_nodes_per_route);
+        int* total_demand_pre_route = new int[ind_ptr->num_routes];
+        instance->compute_demand_sum_per_route(ind_ptr->routes, ind_ptr->num_routes, ind_ptr->num_nodes_per_route, total_demand_pre_route);
+        for (int i = 0; i < ind_ptr->num_routes; ++i) {
+            EXPECT_EQ(total_demand_pre_route[i], ind_ptr->demand_sum_per_route[i]);
+        }
+
+        EXPECT_DOUBLE_EQ(ind_ptr->upper_cost, cost_calculated);
+
+        delete[] total_demand_pre_route;
+    }
+
+    EXPECT_GT(neighbors.size(), 0);
+}
+
+TEST_F(UtilsTest, NeighborExpanding_TwoOptInterRouteForIndividual) {
+    vector<vector<int>> routes = {
+            {0, 2, 1, 5, 7, 6, 9, 0},
+            {0, 8, 3, 4, 11, 10, 13, 0},
+            {0, 21, 19, 17, 20, 0},
+            {0, 14, 16, 12, 15, 18, 0}
+    };
+    vector<int> demand_sum_per_route = {5600, 5400, 6000, 5500};
+    std::unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
+
+    vector<std::unique_ptr<Individual>> neighbors = two_opt_inter_route_for_individual(*ind, *instance, ind->upper_cost * 1.1);
+
+    for (auto& ind_ptr:neighbors) {
+        double cost_calculated = instance->compute_total_distance(ind_ptr->routes, ind_ptr->num_routes, ind_ptr->num_nodes_per_route);
+        int* total_demand_pre_route = new int[ind_ptr->num_routes];
+        instance->compute_demand_sum_per_route(ind_ptr->routes, ind_ptr->num_routes, ind_ptr->num_nodes_per_route, total_demand_pre_route);
+        for (int i = 0; i < ind_ptr->num_routes; ++i) {
+            EXPECT_EQ(total_demand_pre_route[i], ind_ptr->demand_sum_per_route[i]);
+        }
+
+        EXPECT_DOUBLE_EQ(ind_ptr->upper_cost, cost_calculated);
+
+        delete[] total_demand_pre_route;
+    }
+
+    EXPECT_GT(neighbors.size(), 1);
+}
+
+TEST_F(UtilsTest, NeighborExpanding_TwoOptMoveNeighbors) {
+    vector<vector<int>> routes = {
+            {0, 2, 1, 5, 7, 6, 9, 0},
+            {0, 8, 3, 4, 11, 10, 13, 0},
+            {0, 21, 19, 17, 20, 0},
+            {0, 14, 16, 12, 15, 18, 0}
+    };
+    vector<int> demand_sum_per_route = {5600, 5400, 6000, 5500};
+    std::unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
+
+    vector<std::unique_ptr<Individual>> neighbors = two_opt_move_neighbors(*ind, *instance, ind->upper_cost,  1.1);
+
+    for (auto& ind_ptr:neighbors) {
+        double cost_calculated = instance->compute_total_distance(ind_ptr->routes, ind_ptr->num_routes, ind_ptr->num_nodes_per_route);
+        int* total_demand_pre_route = new int[ind_ptr->num_routes];
+        instance->compute_demand_sum_per_route(ind_ptr->routes, ind_ptr->num_routes, ind_ptr->num_nodes_per_route, total_demand_pre_route);
+        for (int i = 0; i < ind_ptr->num_routes; ++i) {
+            EXPECT_EQ(total_demand_pre_route[i], ind_ptr->demand_sum_per_route[i]);
+        }
+
+        EXPECT_DOUBLE_EQ(ind_ptr->upper_cost, cost_calculated);
+
+        delete[] total_demand_pre_route;
+    }
+
+    EXPECT_GT(neighbors.size(), 1);
+}
+
+

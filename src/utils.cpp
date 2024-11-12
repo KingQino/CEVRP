@@ -1404,6 +1404,207 @@ vector<std::unique_ptr<Individual>> two_point_inter_route_for_individual(Individ
     return neighborhoods;
 }
 
+vector<std::unique_ptr<Individual>> two_opt_move_neighbors(Individual& individual, Case& instance, double base_cost, double threshold_ratio) {
+    double threshold = base_cost * threshold_ratio;
+    vector<std::unique_ptr<Individual>> intra_neighbors = two_opt_intra_route_for_individual(individual, instance, threshold);
+    vector<std::unique_ptr<Individual>> inter_neighbors = two_opt_inter_route_for_individual(individual, instance, threshold);
+
+    vector<std::unique_ptr<Individual>> neighbors;
+    neighbors.reserve(intra_neighbors.size() + inter_neighbors.size()); // Pre-allocate memory for efficiency
+
+    // Move elements from intra_neighbors to neighbors
+    neighbors.insert(neighbors.end(),
+                     std::make_move_iterator(intra_neighbors.begin()),
+                     std::make_move_iterator(intra_neighbors.end()));
+
+    // Move elements from inter_neighbors to neighbors
+    neighbors.insert(neighbors.end(),
+                     std::make_move_iterator(inter_neighbors.begin()),
+                     std::make_move_iterator(inter_neighbors.end()));
+
+    return neighbors;
+}
+
+vector<std::unique_ptr<Individual>> two_opt_intra_route_for_individual(Individual& individual, Case& instance, double threshold) {
+    vector<std::unique_ptr<Individual>> neighborhoods;
+
+    for (int i = 0; i < individual.num_routes; ++i) {
+        int* route = individual.routes[i];
+        int length = individual.num_nodes_per_route[i];
+        double upper_cost = individual.upper_cost;
+
+        if (length < 5) continue;
+
+        for (size_t m = 1; m < length - 2; ++m) {
+            for (size_t n = m + 1; n < length - 1; ++n) {
+                // Calculate the cost difference between the old route and the new route obtained by swapping edges
+                double old_cost = instance.get_distance(route[m - 1], route[m]) + instance.get_distance(route[n], route[n + 1]);
+                double new_cost = instance.get_distance(route[m - 1], route[n]) + instance.get_distance(route[m], route[n + 1]);
+
+                double change = old_cost - new_cost;
+                if (upper_cost - change <= threshold) {
+                    unique_ptr<Individual> new_ind = make_unique<Individual>(individual);
+                    reverse(new_ind->routes[i] + m, new_ind->routes[i] + n + 1);
+                    new_ind->upper_cost -= change;
+                    neighborhoods.push_back(std::move(new_ind));
+                }
+            }
+        }
+    }
+
+    return neighborhoods;
+}
+
+vector<std::unique_ptr<Individual>> two_opt_inter_route_for_individual(Individual& individual, Case& instance, double threshold) {
+    vector<std::unique_ptr<Individual>> neighborhoods;
+
+    if (individual.num_routes == 1) {
+        return neighborhoods;
+    }
+
+    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    int* temp_r1 = new int[individual.node_cap];
+    int* temp_r2 = new int[individual.node_cap];
+    bool updated = false;
+
+    while (!route_pairs.empty())
+    {
+        auto [r1, r2] = *route_pairs.begin();
+        route_pairs.erase(route_pairs.begin());
+        int partial_dem_r1 = 0; // the partial demand of route r1, i.e., the head partial route
+
+        double upper_cost = individual.upper_cost;
+
+        for (int n1 = 0; n1 < individual.num_nodes_per_route[r1] - 1; n1++) {
+            partial_dem_r1 += instance.get_customer_demand_(individual.routes[r1][n1]);
+
+            int partial_dem_r2 = 0; // the partial demand of route r2
+            for (int n2 = 0; n2 < individual.num_nodes_per_route[r2] - 1; n2++) {
+                partial_dem_r2 += instance.get_customer_demand_(individual.routes[r2][n2]);
+
+                if (partial_dem_r1 + individual.demand_sum_per_route[r2] - partial_dem_r2 <= instance.max_vehicle_capa_ && partial_dem_r2 + individual.demand_sum_per_route[r1] - partial_dem_r1 <= instance.max_vehicle_capa_) {
+                    double old_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1]) +
+                                      instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
+                    double new_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2 + 1]) +
+                                      instance.get_distance(individual.routes[r2][n2], individual.routes[r1][n1 + 1]);
+                    double change = old_cost - new_cost;
+                    if (upper_cost - change <= threshold) {
+                        unique_ptr<Individual> new_ind = make_unique<Individual>(individual);
+                        memcpy(temp_r1, new_ind->routes[r1], sizeof(int) * new_ind->node_cap);
+                        int counter1 = n1 + 1;
+                        for (int i = n2 + 1; i < new_ind->num_nodes_per_route[r2]; i++) {
+                            new_ind->routes[r1][counter1] = new_ind->routes[r2][i];
+                            counter1++;
+                        }
+                        int counter2 = n2 + 1;
+                        for (int i = n1 + 1; i < new_ind->num_nodes_per_route[r1]; i++) {
+                            new_ind->routes[r2][counter2] = temp_r1[i];
+                            counter2++;
+                        }
+                        new_ind->num_nodes_per_route[r1] = counter1;
+                        new_ind->num_nodes_per_route[r2] = counter2;
+                        int new_dem_sum_1 = partial_dem_r1 + new_ind->demand_sum_per_route[r2] - partial_dem_r2;
+                        int new_dem_sum_2 = partial_dem_r2 + new_ind->demand_sum_per_route[r1] - partial_dem_r1;
+                        new_ind->demand_sum_per_route[r1] = new_dem_sum_1;
+                        new_ind->demand_sum_per_route[r2] = new_dem_sum_2;
+
+                        // remove empty routes
+                        if (new_ind->demand_sum_per_route[r1] == 0) {
+                            int* tmp = new_ind->routes[r1];
+                            new_ind->routes[r1] = new_ind->routes[new_ind->num_routes - 1];
+                            new_ind->routes[new_ind->num_routes - 1] = tmp;
+                            new_ind->demand_sum_per_route[r1] = new_ind->demand_sum_per_route[new_ind->num_routes - 1];
+                            new_ind->num_nodes_per_route[r1] = new_ind->num_nodes_per_route[new_ind->num_routes - 1];
+                            new_ind->num_routes--;
+                            for (int i = 0; i < new_ind->num_routes; i++) {
+                                route_pairs.erase({i, new_ind->num_routes});
+                            }
+                        }
+                        if (new_ind->demand_sum_per_route[r2] == 0) {
+                            int* tmp = new_ind->routes[r2];
+                            new_ind->routes[r2] = new_ind->routes[new_ind->num_routes - 1];
+                            new_ind->routes[new_ind->num_routes - 1] = tmp;
+                            new_ind->demand_sum_per_route[r2] = new_ind->demand_sum_per_route[new_ind->num_routes - 1];
+                            new_ind->num_nodes_per_route[r2] = new_ind->num_nodes_per_route[new_ind->num_routes - 1];
+                            new_ind->num_routes--;
+                            for (int i = 0; i < new_ind->num_routes; i++) {
+                                route_pairs.erase({i, new_ind->num_routes});
+                            }
+                        }
+
+                        new_ind->upper_cost -= change;
+                        neighborhoods.push_back(std::move(new_ind));
+                    }
+                }
+                else if (partial_dem_r1 + partial_dem_r2 <= instance.max_vehicle_capa_ && individual.demand_sum_per_route[r1] - partial_dem_r1 + individual.demand_sum_per_route[r2] - partial_dem_r2 <= instance.max_vehicle_capa_) {
+                    double old_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r1][n1 + 1]) +
+                                      instance.get_distance(individual.routes[r2][n2], individual.routes[r2][n2 + 1]);
+                    double new_cost = instance.get_distance(individual.routes[r1][n1], individual.routes[r2][n2]) +
+                                      instance.get_distance(individual.routes[r1][n1 + 1], individual.routes[r2][n2 + 1]);
+                    double change = old_cost - new_cost;
+                    if (upper_cost - change <= threshold) {
+                        unique_ptr<Individual> new_ind = make_unique<Individual>(individual);
+
+                        memcpy(temp_r1, new_ind->routes[r1], sizeof(int) * new_ind->node_cap);
+                        int counter1 = n1 + 1;
+                        for (int i = n2; i >= 0; i--) {
+                            new_ind->routes[r1][counter1] = new_ind->routes[r2][i];
+                            counter1++;
+                        }
+                        int counter2 = 0;
+                        for (int i = new_ind->num_nodes_per_route[r1] - 1; i >= n1 + 1; i--) {
+                            temp_r2[counter2] = temp_r1[i];
+                            counter2++;
+                        }
+                        for (int i = n2 + 1; i < new_ind->num_nodes_per_route[r2]; i++) {
+                            temp_r2[counter2] = new_ind->routes[r2][i];
+                            counter2++;
+                        }
+                        memcpy(new_ind->routes[r2], temp_r2, sizeof(int) * new_ind->node_cap);
+                        new_ind->num_nodes_per_route[r1] = counter1;
+                        new_ind->num_nodes_per_route[r2] = counter2;
+
+                        int new_dem_sum_1 = partial_dem_r1 + partial_dem_r2;
+                        int new_dem_sum_2 = new_ind->demand_sum_per_route[r1] + new_ind->demand_sum_per_route[r2] - partial_dem_r1 - partial_dem_r2;
+                        new_ind->demand_sum_per_route[r1] = new_dem_sum_1;
+                        new_ind->demand_sum_per_route[r2] = new_dem_sum_2;
+
+                        if (new_ind->demand_sum_per_route[r1] == 0) {
+                            int* tmp = new_ind->routes[r1];
+                            new_ind->routes[r1] = new_ind->routes[new_ind->num_routes - 1];
+                            new_ind->routes[new_ind->num_routes - 1] = tmp;
+                            new_ind->demand_sum_per_route[r1] = new_ind->demand_sum_per_route[new_ind->num_routes - 1];
+                            new_ind->num_nodes_per_route[r1] = new_ind->num_nodes_per_route[new_ind->num_routes - 1];
+                            new_ind->num_routes--;
+                            for (int i = 0; i < new_ind->num_routes; i++) {
+                                route_pairs.erase({i, new_ind->num_routes});
+                            }
+                        }
+                        if (new_ind->demand_sum_per_route[r2] == 0) {
+                            int* tmp = new_ind->routes[r2];
+                            new_ind->routes[r2] = new_ind->routes[new_ind->num_routes - 1];
+                            new_ind->routes[new_ind->num_routes - 1] = tmp;
+                            new_ind->demand_sum_per_route[r2] = new_ind->demand_sum_per_route[new_ind->num_routes - 1];
+                            new_ind->num_nodes_per_route[r2] = new_ind->num_nodes_per_route[new_ind->num_routes - 1];
+                            new_ind->num_routes--;
+                            for (int i = 0; i < new_ind->num_routes; i++) {
+                                route_pairs.erase({i, new_ind->num_routes});
+                            }
+                        }
+
+                        new_ind->upper_cost -= change;
+                        neighborhoods.push_back(std::move(new_ind));
+                    }
+                }
+            }
+        }
+    }
+    delete[] temp_r1;
+    delete[] temp_r2;
+
+
+    return neighborhoods;
+}
 
 /****************************************************************/
 /*                   Recharging Optimization                    */
