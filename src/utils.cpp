@@ -1298,6 +1298,111 @@ vector<std::unique_ptr<Individual>> one_point_inter_route_for_individual(Individ
     return neighborhoods;
 }
 
+vector<std::unique_ptr<Individual>> two_point_move_neighbors(Individual& individual, Case& instance, double base_cost, double threshold_ratio) {
+    double threshold = base_cost * threshold_ratio;
+    vector<std::unique_ptr<Individual>> intra_neighbors = two_point_intra_route_for_individual(individual, instance, threshold);
+    vector<std::unique_ptr<Individual>> inter_neighbors = two_point_inter_route_for_individual(individual, instance, threshold);
+
+    vector<std::unique_ptr<Individual>> neighbors;
+    neighbors.reserve(intra_neighbors.size() + inter_neighbors.size()); // Pre-allocate memory for efficiency
+
+    // Move elements from intra_neighbors to neighbors
+    neighbors.insert(neighbors.end(),
+                     std::make_move_iterator(intra_neighbors.begin()),
+                     std::make_move_iterator(intra_neighbors.end()));
+
+    // Move elements from inter_neighbors to neighbors
+    neighbors.insert(neighbors.end(),
+                     std::make_move_iterator(inter_neighbors.begin()),
+                     std::make_move_iterator(inter_neighbors.end()));
+
+    return neighbors;
+}
+
+vector<std::unique_ptr<Individual>> two_point_intra_route_for_individual(Individual& individual, Case& instance, double threshold) {
+    vector<std::unique_ptr<Individual>> neighborhoods;
+
+    for (int i = 0; i < individual.num_routes; i++) {
+        int* route = individual.routes[i];
+        int length = individual.num_nodes_per_route[i];
+        double upper_cost = individual.upper_cost;
+
+        // boundary check
+        if (length < 5) continue;
+
+        // adjacent nodes do not swap
+        for(int m = 1; m < length - 3; m++) {
+            for(int n = m + 2; n < length - 1; n++) {
+                double old_cost = instance.get_distance(route[m - 1], route[m]) + instance.get_distance(route[m], route[m + 1])
+                                  + instance.get_distance(route[n - 1], route[n]) + instance.get_distance(route[n], route[n + 1]);
+                double new_cost = instance.get_distance(route[m - 1], route[n]) + instance.get_distance(route[n], route[m + 1])
+                                  + instance.get_distance(route[n - 1], route[m]) + instance.get_distance(route[m], route[n + 1]);
+                double change = old_cost - new_cost;
+                if (upper_cost - change <= threshold) {
+                    unique_ptr<Individual> new_ind = make_unique<Individual>(individual);
+                    swap(new_ind->routes[i][m], new_ind->routes[i][n]);
+                    new_ind->upper_cost -= change;
+                    neighborhoods.push_back(std::move(new_ind));
+                }
+            }
+        }
+    }
+
+    return neighborhoods;
+}
+
+vector<std::unique_ptr<Individual>> two_point_inter_route_for_individual(Individual& individual, Case& instance, double threshold) {
+    vector<std::unique_ptr<Individual>> neighborhoods;
+
+    if (individual.num_routes == 1) {
+        return neighborhoods;
+    }
+
+    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+
+    while (!route_pairs.empty())
+    {
+        int r1 = route_pairs.begin()->first;
+        int r2 = route_pairs.begin()->second;
+        route_pairs.erase(route_pairs.begin());
+
+        int* route1 = individual.routes[r1];
+        int* route2 = individual.routes[r2];
+        int length1 = individual.num_nodes_per_route[r1];
+        int length2 = individual.num_nodes_per_route[r2];
+        int loading1 = individual.demand_sum_per_route[r1];
+        int loading2 = individual.demand_sum_per_route[r2];
+        double upper_cost = individual.upper_cost;
+
+        // boundary check
+        if (length1 < 3 || length2 < 3) continue;
+
+        // vehicle capacity constraint check and fitness improvement check
+        for (int i = 1; i < length1 - 1; i++) {
+            for (int j = 1; j < length2 - 1; j++) {
+                int demand_I = instance.get_customer_demand_(route1[i]);
+                int demand_J = instance.get_customer_demand_(route2[j]);
+                if (loading1 - demand_I + demand_J <= instance.max_vehicle_capa_ && loading2 - demand_J + demand_I <= instance.max_vehicle_capa_) {
+                    double old_cost = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1])
+                                      + instance.get_distance(route2[j - 1], route2[j]) + instance.get_distance(route2[j], route2[j + 1]);
+                    double new_cost = instance.get_distance(route1[i - 1], route2[j]) + instance.get_distance(route2[j], route1[i + 1])
+                                      + instance.get_distance(route2[j - 1], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
+                    double change = old_cost - new_cost;
+                    if (upper_cost - change <= threshold) {
+                        unique_ptr<Individual> new_ind = make_unique<Individual>(individual);
+                        swap(new_ind->routes[r1][i], new_ind->routes[r2][j]);
+                        new_ind->demand_sum_per_route[r1] = loading1 - demand_I + demand_J;
+                        new_ind->demand_sum_per_route[r2] = loading2 - demand_J + demand_I;
+                        new_ind->upper_cost -= change;
+                        neighborhoods.push_back(std::move(new_ind));
+                    }
+                }
+            }
+        }
+    }
+
+    return neighborhoods;
+}
 
 
 /****************************************************************/
