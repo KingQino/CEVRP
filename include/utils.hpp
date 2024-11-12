@@ -72,9 +72,13 @@ void two_nodes_swap_for_single_route_acceleration(int* route, int length, double
 bool two_nodes_swap_between_two_routes_acceleration(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2, double& cost, Case& instance);
 bool two_point_move_inter_route_for_individual_acceleration(Individual& individual, Case& instance); // four-arcs exchange, inter-route
 
-
-
 // neighbors expanding: expand the numbers of promising upper-level solution by exploiting the neighborhood => good at handle coupling issues
+// we are going to use the concept `threshold` to accept some bad solutions. `threshold_ratio` is a decimal fraction (>1), `base_cost` is the cost of the best upper-level sub-solution encountered so far
+vector<std::unique_ptr<Individual>> one_point_move_neighbors(Individual& individual, Case& instance, double base_cost, double threshold_ratio);
+vector<std::unique_ptr<Individual>> one_point_intra_route_for_individual(Individual& individual, Case& instance, double threshold);
+vector<std::unique_ptr<Individual>> one_point_inter_route_for_individual(Individual& individual, Case& instance, double threshold);
+
+
 
 
 // lower-level optimisation: make recharging decision => minimise the lower cost
