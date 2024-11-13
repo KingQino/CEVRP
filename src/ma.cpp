@@ -20,6 +20,11 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->mutation_prob = 0.5;
     this->mutation_ind_prob = 0.2;
     this->tournament_size = 2;
+
+    this->gammaL = 1.2;
+    this->gammaR = 0.8;
+    this->delta = 30;
+    this->r = 0.0;
 }
 
 Ma::~Ma() {

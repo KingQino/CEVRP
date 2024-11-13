@@ -74,6 +74,7 @@ bool two_point_move_inter_route_for_individual_acceleration(Individual& individu
 
 // neighbors expanding: expand the numbers of promising upper-level solution by exploiting the neighborhood => good at handle coupling issues
 // we are going to use the concept `threshold` to accept some bad solutions. `threshold_ratio` is a decimal fraction (>1), `base_cost` is the cost of the best upper-level sub-solution encountered so far
+// Note! The `base_cost` either uses the best upper-level sub-solution within each generation, or the best upper sub-solution found globally so far
 vector<std::unique_ptr<Individual>> one_point_move_neighbors(Individual& individual, Case& instance, double base_cost, double threshold_ratio);
 vector<std::unique_ptr<Individual>> one_point_intra_route_for_individual(Individual& individual, Case& instance, double threshold);
 vector<std::unique_ptr<Individual>> one_point_inter_route_for_individual(Individual& individual, Case& instance, double threshold);

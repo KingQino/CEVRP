@@ -69,6 +69,11 @@ public:
     double mutation_ind_prob;
 
     // confidence-based filter strategy
+    double gammaL; // confidence ratio of local search (>1): the larger it is, the more solutions are selected to carry out local search
+    double gammaR; // confidence ratio of recharging (0, 1): the smaller it is, the more solutions are selected to carry out recharging
+    int delta;  // confidence interval
+    deque<double> P; // list for confidence intervals of local search
+    double r; // confidence interval is used to judge whether an upper-level sub-solution should make the charging process
 
 
     // controlled experiments
