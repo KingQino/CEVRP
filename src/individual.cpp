@@ -103,11 +103,12 @@ void Individual::cleanup() const {
     }
 }
 
-void Individual::start_lower_solution() const {
+void Individual::start_lower_solution() {
     for (int i = 0; i < this->route_cap; ++i) {
         memcpy(this->lower_routes[i], this->routes[i], sizeof(int) * this->node_cap);
         this->lower_num_nodes_per_route[i] = this->num_nodes_per_route[i];
     }
+    this->lower_cost = this->upper_cost;
 }
 
 void Individual::set_lower_cost(double lower_cost_) {

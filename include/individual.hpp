@@ -37,7 +37,7 @@ public:
     Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route);
     ~Individual();
 
-    void start_lower_solution() const;
+    void start_lower_solution();
     void set_lower_cost(double lower_cost_);
     [[nodiscard]] vector<int> get_chromosome() const;
     void cleanup() const;

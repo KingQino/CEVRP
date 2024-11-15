@@ -88,7 +88,7 @@ vector<std::unique_ptr<Individual>> two_opt_inter_route_for_individual(Individua
 
 // lower-level optimisation: make recharging decision => minimise the lower cost
 // i.e., insert the optimal/near-optimal charging stations_ into the route
-double fix_one_solution(Individual& individual, Case& instance);
+void fix_one_solution(Individual& individual, Case& instance);
 double insert_station_by_simple_enumeration_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance);
 double insert_station_by_remove_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance);
 void tryACertainNArray(int mlen, int nlen, int* chosenPos, int* bestChosenPos, double& finalfit, int curub, int* route, int length, vector<double>& accumulateDis, Case& instance);

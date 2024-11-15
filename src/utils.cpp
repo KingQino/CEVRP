@@ -1610,7 +1610,7 @@ vector<std::unique_ptr<Individual>> two_opt_inter_route_for_individual(Individua
 /*                   Recharging Optimization                    */
 /****************************************************************/
 
-double fix_one_solution(Individual &individual, Case& instance) {
+void fix_one_solution(Individual &individual, Case& instance) {
     double lower_cost = 0.0;
 
     individual.start_lower_solution();
@@ -1631,7 +1631,6 @@ double fix_one_solution(Individual &individual, Case& instance) {
     }
 
     individual.set_lower_cost(lower_cost);
-    return lower_cost;
 }
 
 double insert_station_by_simple_enumeration_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
