@@ -400,7 +400,8 @@ TEST_F(UtilsTest, FixOneSolution) {
     vector<int> demand_sum_per_route = {5600, 5200, 2700, 5800, 3200};
     unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, 678.8177686900328, demand_sum_per_route);
 
-    double fixed_fit = fix_one_solution(*ind, *instance);
+    fix_one_solution(*ind, *instance);
+    double fixed_fit = ind->lower_cost;
     int num_nodes = std::accumulate(ind->lower_num_nodes_per_route, ind->lower_num_nodes_per_route + ind->num_routes, 0);
 
     EXPECT_EQ(fixed_fit, 685.4783939004661);

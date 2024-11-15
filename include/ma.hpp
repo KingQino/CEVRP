@@ -38,6 +38,8 @@ public:
     void init_ind_by_chromosome(Individual& ind, const vector<int>& chromosome) const;
     shared_ptr<Individual> admit_one_individual(const vector<int>& chromosome);
     static Individual& select_best_individual_ref(const vector<unique_ptr<Individual>>& individuals);
+    static Individual& select_best_upper_individual_ref(const vector<unique_ptr<Individual>>& individuals);
+    static Individual* select_best_upper_individual_ptr(const vector<Individual*>& individuals);
     vector<int> get_immigrant_chromosome(std::default_random_engine& rng) const;
     static vector<double> extract_fitness_values(const vector<unique_ptr<Individual>>& individuals);
     static double calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values);

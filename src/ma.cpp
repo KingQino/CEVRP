@@ -97,71 +97,183 @@ void Ma::initialize_heuristic() {
 void Ma::run_heuristic() {
     iter++;
 
-    for(auto& ind : population) {
-        // upper-level optimisation
-        two_opt_for_individual(*ind, *instance);
+    vector<Individual*> S1;
+    S1.reserve(population.size());
+    for (const auto& individual : population) {
+        S1.push_back(individual.get());
+    }
+
+    double v1 = 0;
+    double v2;
+    Individual* talented_ind = select_best_upper_individual_ptr(S1);
+    if (iter > delta) { //  switch off - False
+        // when the generations are greater than the threshold, part of the upper-level sub-solutions S1 will be selected for local search
+        double old_fit = talented_ind->upper_cost;
+
+        two_opt_for_individual(*talented_ind, *instance);
+        two_opt_star_for_individual(*talented_ind, *instance);
+        one_point_move_intra_route_for_individual(*talented_ind, *instance);
+
+        double new_fit = talented_ind->upper_cost;
+        v1 = old_fit - new_fit;
+        v2 = *std::max_element(P.begin(), P.end());
+
+        if (v2 < v1) v2 = v1 * gammaL;
+
+        S1.clear();
+        for (auto& ind:population) {
+            if (ind->upper_cost - v2 <= new_fit) S1.push_back(ind.get());
+        }
+
+        auto it = std::find(S1.begin(), S1.end(), talented_ind);
+        // If talented_ind is found in S1, remove it to avoid duplication for upper-level optimisation
+        if (it != S1.end()) {
+            S1.erase(it);
+        }
+    }
+
+    // make local search on S1
+    v2 = 0;
+    for(auto ind : S1) {
+        double old_fit = ind->upper_cost;
+        two_opt_for_individual(*ind, *instance); // 2-opt
         two_opt_star_for_individual(*ind, *instance);
         one_point_move_intra_route_for_individual(*ind, *instance);
+        if (v2 < old_fit - ind->upper_cost)
+            v2 = old_fit - ind->upper_cost;
+    }
+    v2 = (v1 > v2) ? v1 : v2;
+    P.push_back(v2);
+    if (P.size() > delta)  P.pop_front();
+    if (iter > delta) S1.push_back(talented_ind); //  *** switch off ***
 
-        // lower-level optimisation
+    // Current S1 has been selected and local search.
+    // Pick a portion of the upper sub-solutions to go for recharging process, by the difference between before and after charging of the best solution in S1
+    vector<Individual*> S2 = S1;
+    double v3;
+    Individual* outstanding_upper = select_best_upper_individual_ptr(S1);
+    if (iter > 0) { // switch - which is a virtual switch, always true, need to be implemented
+        double old_fit = outstanding_upper->upper_cost; // fitness without recharging f
+        fix_one_solution(*outstanding_upper, *instance); // fitness with recharging F
+        double new_fit = outstanding_upper->lower_cost;
+        v3 = new_fit - old_fit;
+        if (r > v3) r = v3 * gammaR;
+
+        S2.clear();
+        for (auto& ind:S1) {
+            if (ind->upper_cost + r <= new_fit)
+                S2.push_back(ind);
+        }
+
+        auto it = std::find(S2.begin(), S2.end(), outstanding_upper);
+        // If outstanding_upper is found, remove it from S2
+        if (it != S2.end()) {
+            S2.erase(it);
+        }
+    }
+
+    // Current S2 has been selected and ready for recharging, make recharging on S2
+    vector<Individual*> S3;
+    S3.push_back(outstanding_upper);
+    for (auto& ind:S2) {
+        double old_fit = ind->upper_cost;
         fix_one_solution(*ind, *instance);
+        double new_fit = ind->lower_cost;
+        S3.push_back(ind);
+        if (v3 > new_fit - old_fit)
+            v3 = new_fit - old_fit;
+    }
+    if (r == 0 || r > v3) {
+        r = v3;
     }
 
-    // iteration-best individual goes to the next iteration
-    auto& iter_best = select_best_individual_ref(population);
-    if (global_best->lower_cost > iter_best.lower_cost) {
-        global_best = make_unique<Individual>(iter_best); // create a new copy of the iter best
+    // statistics
+    unique_ptr<Individual> iter_best = make_unique<Individual>(*select_best_upper_individual_ptr(S3));
+    if (global_best->lower_cost > iter_best->lower_cost) {
+        global_best = make_unique<Individual>(*iter_best);
     }
 
-
-    vector<vector<int>> local_optimised_pool;
-    local_optimised_pool.reserve(pop_size);
-    for(auto& ind : population) {
-        local_optimised_pool.push_back(ind->get_chromosome());
+    // adaptive selection for crossover
+    vector<vector<int>> promising_seqs;
+    promising_seqs.reserve(S3.size());
+    for(auto& sol : S3) {
+        promising_seqs.push_back(sol->get_chromosome()); // encoding
+    }
+    vector<vector<int>> average_seqs;
+    for(auto& sol : population) {
+        // judge whether sol in S3 or not
+        auto it = std::find(S3.begin(), S3.end(), sol.get());
+        if (it != S3.end()) continue;
+        average_seqs.push_back(sol->get_chromosome()); // encoding
     }
 
     vector<vector<int>> chromosomes;
     chromosomes.reserve(pop_size);
+    if (promising_seqs.size() == 1) {
+        const vector<int>& father = promising_seqs[0];
+        // 90% - elite x non-elites
+        for (int i = 0; i < int (0.45 * pop_size); ++i) {
+            vector<int> _father(father);
+            vector<int> mother(average_seqs[select_random(static_cast<int>(average_seqs.size()), 1, random_engine)[0]]);
 
-    // adaptive selection for crossover
-    diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
-    if (diversity > 0.5 ) {
-        // a value close to 1 indicates high diversity
-        int cx_count_between_elites = int(0.45 * pop_size);
-        int cx_count_between_elite_and_immigrant = int(0.05 * pop_size);
-        for (int i = 0; i < cx_count_between_elites; ++i) {
-            vector<int> selected_indices = select_random(pop_size, 2, random_engine);
-            vector<int> elite1(local_optimised_pool[selected_indices[0]]);
-            vector<int> elite2(local_optimised_pool[selected_indices[1]]);
+            cx_partially_matched(_father, mother, random_engine);
 
-            cx_partially_matched(elite1, elite2, random_engine);
-
-            chromosomes.push_back(std::move(elite1));
-            chromosomes.push_back(std::move(elite2));
+            chromosomes.push_back(std::move(_father));
+            chromosomes.push_back(std::move(mother));
         }
-        for (int i = 0; i < cx_count_between_elite_and_immigrant; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
+        // 9%  - elite x immigrants
+        for (int i = 0; i < int(0.05 * pop_size); ++i) {
+            vector<int> _father(father);
+            vector<int> mother(instance->customers_);
 
-            cx_partially_matched(elite, immigrant, random_engine);
+            shuffle(mother.begin(), mother.end(), random_engine);
+            cx_partially_matched(_father, mother, random_engine);
 
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
+            chromosomes.push_back(std::move(_father));
+            chromosomes.push_back(std::move(mother));
         }
     } else {
-        // a value near 0 indicates low diversity
-        int cx_count = int(0.5 * pop_size);
+        // boundary condition - average_seqs might be empty
+        // if the size of the average population is quite small, then only the promising_seqs mate
+        if (average_seqs.size() < int(0.1 * pop_size)) {
+            for (int i = 0; i < int(pop_size/2); ++i) {
+                vector<int> selected_indices = select_random(static_cast<int>(promising_seqs.size()), 2, random_engine);
+                vector<int> elite1(promising_seqs[selected_indices[0]]);
+                vector<int> elite2(promising_seqs[selected_indices[1]]);
 
-        for (int i = 0; i < cx_count; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
+                cx_partially_matched(elite1, elite2, random_engine);
 
-            cx_partially_matched(elite, immigrant, random_engine);
+                chromosomes.push_back(std::move(elite1));
+                chromosomes.push_back(std::move(elite2));
+            }
+        } else {
+            // part of elites x elites
+            int num_promising_seqs = static_cast<int>(promising_seqs.size());
+            int loop_num = int(num_promising_seqs / 2.0) < (pop_size/2) ? int(num_promising_seqs / 2.0) : int(pop_size/4);
+            for (int i = 0; i < loop_num; ++i) {
+                vector<int> selected_indices = select_random(static_cast<int>(promising_seqs.size()), 2, random_engine);
+                vector<int> elite1(promising_seqs[selected_indices[0]]);
+                vector<int> elite2(promising_seqs[selected_indices[1]]);
 
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
+                cx_partially_matched(elite1, elite2, random_engine);
+
+                chromosomes.push_back(std::move(elite1));
+                chromosomes.push_back(std::move(elite2));
+            }
+            // portion of elites x non-elites
+            int num_promising_x_average = pop_size - static_cast<int>(chromosomes.size());
+            for (int i = 0; i < int(num_promising_x_average / 2.0); ++i) { // TODO: DEBUG
+                int promising_idx = select_random(static_cast<int>(promising_seqs.size()), 1, random_engine)[0];
+                int average_idx   = select_random(static_cast<int>(average_seqs.size()), 1, random_engine)[0];
+
+                vector<int> elite1(promising_seqs[promising_idx]);
+                vector<int> elite2(average_seqs[average_idx]);
+
+                cx_partially_matched(elite1, elite2, random_engine);
+
+                chromosomes.push_back(std::move(elite1));
+                chromosomes.push_back(std::move(elite2));
+            }
         }
     }
 
@@ -172,9 +284,13 @@ void Ma::run_heuristic() {
         }
     }
 
+    // clean up the S1, S2, S3
+    S3.clear();
+    S2.clear();
+    S1.clear();
     // update the population
     for (int i = 0; i < pop_size; ++i) {
-        if (population[i].get() == &iter_best) continue; // Skip the best individual
+        if (population[i].get() == iter_best.get()) continue; // Skip the best individual
 
         // reset individual & update through chromosome
         population[i]->reset();
@@ -294,6 +410,30 @@ Individual& Ma::select_best_individual_ref(const vector<unique_ptr<Individual>>&
     auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
 
     return **best_individual;
+}
+
+Individual& Ma::select_best_upper_individual_ref(const vector<unique_ptr<Individual>> &individuals) {
+    assert(!individuals.empty());  // Ensure there's at least one individual
+
+    auto comparator = [](const unique_ptr<Individual>& ind1, const unique_ptr<Individual>& ind2) {
+        return ind1->upper_cost < ind2->upper_cost;
+    };
+
+    auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
+
+    return **best_individual;
+}
+
+Individual* Ma::select_best_upper_individual_ptr(const vector<Individual*>& individuals) {
+    assert(!individuals.empty());  // Ensure there's at least one individual
+
+    auto comparator = [](const Individual* ind1, const Individual* ind2) {
+        return ind1->upper_cost < ind2->upper_cost;
+    };
+
+    auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
+
+    return *best_individual;
 }
 
 double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values) {
