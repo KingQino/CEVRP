@@ -108,21 +108,20 @@ void Ma::run_heuristic() {
     Individual* talented_ind = select_best_upper_individual_ptr(S1);
     if (iter > delta) { //  switch off - False
         // when the generations are greater than the threshold, part of the upper-level sub-solutions S1 will be selected for local search
-        double old_fit = talented_ind->upper_cost;
+        double old_cost = talented_ind->upper_cost;
 
         two_opt_for_individual(*talented_ind, *instance);
         two_opt_star_for_individual(*talented_ind, *instance);
         one_point_move_intra_route_for_individual(*talented_ind, *instance);
 
-        double new_fit = talented_ind->upper_cost;
-        v1 = old_fit - new_fit;
+        double new_cost = talented_ind->upper_cost;
+        v1 = old_cost - new_cost;
         v2 = *std::max_element(P.begin(), P.end());
-
         if (v2 < v1) v2 = v1 * gammaL;
 
         S1.clear();
         for (auto& ind:population) {
-            if (ind->upper_cost - v2 <= new_fit) S1.push_back(ind.get());
+            if (ind->upper_cost - v2 <= new_cost) S1.push_back(ind.get());
         }
 
         auto it = std::find(S1.begin(), S1.end(), talented_ind);
@@ -135,12 +134,12 @@ void Ma::run_heuristic() {
     // make local search on S1
     v2 = 0;
     for(auto ind : S1) {
-        double old_fit = ind->upper_cost;
+        double old_cost = ind->upper_cost;
         two_opt_for_individual(*ind, *instance); // 2-opt
         two_opt_star_for_individual(*ind, *instance);
         one_point_move_intra_route_for_individual(*ind, *instance);
-        if (v2 < old_fit - ind->upper_cost)
-            v2 = old_fit - ind->upper_cost;
+        if (v2 < old_cost - ind->upper_cost)
+            v2 = old_cost - ind->upper_cost;
     }
     v2 = (v1 > v2) ? v1 : v2;
     P.push_back(v2);
@@ -153,15 +152,15 @@ void Ma::run_heuristic() {
     double v3;
     Individual* outstanding_upper = select_best_upper_individual_ptr(S1);
     if (iter > 0) { // switch - which is a virtual switch, always true, need to be implemented
-        double old_fit = outstanding_upper->upper_cost; // fitness without recharging f
+        double upper_cost = outstanding_upper->upper_cost; // fitness without recharging f
         fix_one_solution(*outstanding_upper, *instance); // fitness with recharging F
-        double new_fit = outstanding_upper->lower_cost;
-        v3 = new_fit - old_fit;
+        double lower_cost = outstanding_upper->lower_cost;
+        v3 = lower_cost - upper_cost;
         if (r > v3) r = v3 * gammaR;
 
         S2.clear();
         for (auto& ind:S1) {
-            if (ind->upper_cost + r <= new_fit)
+            if (ind->upper_cost + r <= lower_cost)
                 S2.push_back(ind);
         }
 
@@ -176,12 +175,12 @@ void Ma::run_heuristic() {
     vector<Individual*> S3;
     S3.push_back(outstanding_upper);
     for (auto& ind:S2) {
-        double old_fit = ind->upper_cost;
+        double old_cost = ind->upper_cost;
         fix_one_solution(*ind, *instance);
-        double new_fit = ind->lower_cost;
+        double new_cost = ind->lower_cost;
         S3.push_back(ind);
-        if (v3 > new_fit - old_fit)
-            v3 = new_fit - old_fit;
+        if (v3 > new_cost - old_cost)
+            v3 = new_cost - old_cost;
     }
     if (r == 0 || r > v3) {
         r = v3;
