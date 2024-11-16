@@ -296,6 +296,15 @@ Individual& Ma::select_best_individual_ref(const vector<unique_ptr<Individual>>&
     return **best_individual;
 }
 
+Individual* Ma::select_best_upper_individual_ptr(const vector<Individual*>& individuals) {
+    assert(!individuals.empty());  // Ensure there's at least one individual
+    auto comparator = [](const Individual* ind1, const Individual* ind2) {
+        return ind1->upper_cost < ind2->upper_cost;
+    };
+    auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
+    return *best_individual;
+}
+
 double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values) {
     int N = static_cast<int>(fitness_values.size());
 
