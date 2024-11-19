@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iterator>
 #include <deque>
+#include <queue>
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -50,6 +51,9 @@ public:
     Case* instance;
     vector<unique_ptr<Individual>> population;
     unique_ptr<Individual> global_best;
+    unique_ptr<Individual> global_upper_best;
+    queue<double> global_upper_best_in_past_two_gens;
+    double recharging_threshold_ratio_last_gen;
     double diversity;
 
     uniform_int_distribution<int> uniform_int_dist;
