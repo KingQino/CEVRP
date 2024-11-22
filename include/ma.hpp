@@ -31,6 +31,7 @@ public:
     void run_heuristic() override;
     bool stop_criteria_max_evals() const override;
     bool stop_criteria_max_exec_time(const std::chrono::duration<double>& duration) const override;
+    bool stop_criteria_obj_convergence(double current_best_obj) const override;
     void open_log_for_evolution() override;
     void flush_row_into_evol_log() override;
     void close_log_for_evolution() override;

@@ -157,6 +157,8 @@ void Case::read_problem(const std::string &filePath) {
     } else {
         max_exec_time_ = int (3 * (problem_size_ / 100.0) * 60 * 60);
     }
+    this->convergence_epsilon_ = 1e-4; // 0.0001
+    this->max_no_change_count_ = 800; // adjust further
 
 }
 

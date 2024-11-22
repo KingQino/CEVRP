@@ -80,6 +80,8 @@ public:
     double evals_{};
     double max_evals_{};
     int max_exec_time_{}; // seconds
+    double convergence_epsilon_{};
+    int max_no_change_count_{};
 };
 
 #endif //CEVRP_CASE_HPP

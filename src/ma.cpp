@@ -82,6 +82,27 @@ bool Ma::stop_criteria_max_exec_time(const std::chrono::duration<double>& durati
     return duration.count() >= instance->max_exec_time_;
 }
 
+bool Ma::stop_criteria_obj_convergence(double current_best_obj) const {
+    static int no_change_count = 0; // consecutive no-change count
+    static double prev_best_obj = std::numeric_limits<double>::max(); // previous best objective, initialized to infinity
+
+    // calculate the change in objective value
+    double obj_change = std::abs(current_best_obj - prev_best_obj);
+
+    // If change is small, increment count; otherwise, reset
+    if (obj_change < instance->convergence_epsilon_) {
+        no_change_count++;
+    } else {
+        no_change_count = 0;
+    }
+
+    // update previous objective value
+    prev_best_obj = current_best_obj;
+
+    // check if max no-change count is reached
+    return no_change_count >= instance->max_no_change_count_;
+}
+
 void Ma::initialize_heuristic() {
     // using clustering approach to initialize the population
     for (int i = 0; i < this->pop_size; ++i) {

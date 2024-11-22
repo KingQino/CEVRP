@@ -33,6 +33,7 @@ public:
     virtual void run_heuristic() = 0;
     [[nodiscard]] virtual bool stop_criteria_max_evals() const = 0;
     [[nodiscard]] virtual bool stop_criteria_max_exec_time(const std::chrono::duration<double>& duration) const = 0;
+    [[nodiscard]] virtual bool stop_criteria_obj_convergence(double current_best_obj) const = 0;
 
     virtual ~HeuristicInterface() = default;
 };
