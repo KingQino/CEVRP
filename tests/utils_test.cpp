@@ -914,4 +914,33 @@ TEST_F(UtilsTest, NeighborExpanding_TwoOptMoveNeighbors) {
     EXPECT_GT(neighbors.size(), 1);
 }
 
+TEST_F(UtilsTest, Refine_InsertStationByAllEnumeration) {
+    vector<vector<int>> routes = {
+            {0, 15, 2, 7, 20, 4, 6, 0},
+            {0, 13, 5, 8, 19, 0},
+            {0, 17, 9, 21, 3, 18, 12, 10, 0},
+            {0, 16, 14, 1, 11, 0}
+    };
+    vector<int> demand_sum = {6000, 6000, 5800, 4700};
+    shared_ptr<Individual> ind_ = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum);
+
+    fix_one_solution(*ind_, *instance);
+
+    double total_dis = 0;
+    for (auto& route: routes) {
+        int* repaired_route = new int [instance->num_customer_ + instance->num_depot_];
+        memcpy(repaired_route, route.data(), route.size() * sizeof(int));
+        int repaired_length = static_cast<int>(route.size());
+
+        double lower_cost = insert_station_by_all_enumeration(route.data(), static_cast<int>(route.size()), repaired_route, repaired_length, *instance);
+
+        EXPECT_DOUBLE_EQ(lower_cost, instance->compute_total_distance(repaired_route, repaired_length));
+
+        total_dis += lower_cost;
+        delete[] repaired_route;
+    }
+
+    EXPECT_LE(total_dis, ind_->lower_cost);
+}
+
 

@@ -13,6 +13,7 @@
 #include <memory>
 #include <unordered_set>
 #include <list>
+#include <stack>
 
 #include "case.hpp"
 #include "individual.hpp"
@@ -28,6 +29,11 @@ struct pair_hash
     size_t operator() (pair<int, int> const & apair) const {
         return apair.first * 256 + apair.second;
     }
+};
+
+// Stack to simulate recursion
+struct State {
+    int m_len, n_len, i, stationIdx; // Current state variables
 };
 
 // split - transfer a chromosome into upper-solution
@@ -91,9 +97,12 @@ vector<std::unique_ptr<Individual>> two_opt_inter_route_for_individual(Individua
 void fix_one_solution(Individual& individual, Case& instance);
 double insert_station_by_simple_enumeration_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance);
 double insert_station_by_remove_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance);
-void tryACertainNArray(int mlen, int nlen, int* chosenPos, int* bestChosenPos, double& finalfit, int curub, int* route, int length, vector<double>& accumulateDis, Case& instance);
+void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* bestChosenPos, double& finalfit, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance);
 
-
+// refine: neighbourhood expanding + recharging all enumeration
+double insert_station_by_all_enumeration(int* route, int length, int* repaired_route, int& repaired_length, Case& instance);
+void try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, int* chosen_pos, int* repaired_route, int& repaired_length,
+                                       double& cost, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance);
 
 
 

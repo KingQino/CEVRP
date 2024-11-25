@@ -1642,14 +1642,14 @@ double insert_station_by_simple_enumeration_array(int* route, int length, int* r
         return accumulateDistance.back();
     }
 
-    int ub = (int)(accumulateDistance.back() / instance.max_distance_ + 1);
-    int lb = (int)(accumulateDistance.back() / instance.max_distance_);
-    int* chosenPos = new int[length];
+    int upper_bound = (int)(accumulateDistance.back() / instance.max_distance_ + 1);
+    int lower_bound = (int)(accumulateDistance.back() / instance.max_distance_);
+    int* chosen_pos = new int[length];
     int* bestChosenPos = new int[length]; // customized variable
     double final_cost = numeric_limits<double>::max();
     double best_cost = final_cost; // customized variable
-    for (int i = lb; i <= ub; i++) {
-        tryACertainNArray(0, i, chosenPos, bestChosenPos, final_cost, i, route, length, accumulateDistance, instance);
+    for (int i = lower_bound; i <= upper_bound; i++) {
+        tryACertainNArray(0, i, chosen_pos, bestChosenPos, final_cost, i, route, length, accumulateDistance, instance);
 
         if (final_cost < best_cost) {
             memset(repaired_route, 0, sizeof(int) * repaired_length);
@@ -1676,7 +1676,7 @@ double insert_station_by_simple_enumeration_array(int* route, int length, int* r
             best_cost = final_cost;
         }
     }
-    delete[] chosenPos;
+    delete[] chosen_pos;
     delete[] bestChosenPos;
     if (final_cost !=  numeric_limits<double>::max()) {
         return final_cost;
@@ -1811,50 +1811,188 @@ double insert_station_by_remove_array(int* route, int length, int* repaired_rout
     return sum;
 }
 
-void tryACertainNArray(int mlen, int nlen, int* chosenPos, int* bestChosenPos, double& finalfit, int curub, int* route, int length, vector<double>& accumulateDis, Case& instance) {
-    for (int i = mlen; i <= length - 1 - nlen; i++) {
-        if (curub == nlen) {
+void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* bestChosenPos, double& finalfit, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance) {
+    for (int i = m_len; i <= length - 1 - n_len; i++) {
+        if (cur_upper_bound == n_len) {
             double onedis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
-            if (accumulateDis[i] + onedis > instance.max_distance_) {
+            if (accumulated_distance[i] + onedis > instance.max_distance_) {
                 break;
             }
         }
         else {
-            int lastpos = chosenPos[curub - nlen - 1];
+            int lastpos = chosen_pos[cur_upper_bound - n_len - 1];
             double onedis = instance.get_distance(route[lastpos + 1], instance.best_station_[route[lastpos]][route[lastpos + 1]]);
             double twodis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
-            if (accumulateDis[i] - accumulateDis[lastpos + 1] + onedis + twodis > instance.max_distance_) {
+            if (accumulated_distance[i] - accumulated_distance[lastpos + 1] + onedis + twodis > instance.max_distance_) {
                 break;
             }
         }
-        if (nlen == 1) {
-            double onedis = accumulateDis.back() - accumulateDis[i + 1] + instance.get_distance(instance.best_station_[route[i]][route[i + 1]], route[i + 1]);
+        if (n_len == 1) {
+            double onedis = accumulated_distance.back() - accumulated_distance[i + 1] + instance.get_distance(instance.best_station_[route[i]][route[i + 1]], route[i + 1]);
             if (onedis > instance.max_distance_) {
                 continue;
             }
         }
 
-        chosenPos[curub - nlen] = i;
-        if (nlen > 1) {
-            tryACertainNArray(i + 1, nlen - 1, chosenPos,  bestChosenPos, finalfit, curub, route, length, accumulateDis, instance);
+        chosen_pos[cur_upper_bound - n_len] = i;
+        if (n_len > 1) {
+            tryACertainNArray(i + 1, n_len - 1, chosen_pos,  bestChosenPos, finalfit, cur_upper_bound, route, length, accumulated_distance, instance);
         }
         else {
-            double disum = accumulateDis.back();
-            for (int j = 0; j < curub; j++) {
-                int firstnode = route[chosenPos[j]];
-                int secondnode = route[chosenPos[j] + 1];
-                int thestation = instance.best_station_[firstnode][secondnode];
-                disum -= instance.get_distance(firstnode, secondnode);
-                disum += instance.get_distance(firstnode, thestation);
-                disum += instance.get_distance(secondnode, thestation);
+            double disum = accumulated_distance.back();
+            for (int j = 0; j < cur_upper_bound; j++) {
+                int first_node = route[chosen_pos[j]];
+                int second_node = route[chosen_pos[j] + 1];
+                int thestation = instance.best_station_[first_node][second_node];
+                disum -= instance.get_distance(first_node, second_node);
+                disum += instance.get_distance(first_node, thestation);
+                disum += instance.get_distance(second_node, thestation);
             }
             if (disum < finalfit) {
                 finalfit = disum;
                 for (int j = 0; j < length; ++j) {
-                    bestChosenPos[j] = chosenPos[j];
+                    bestChosenPos[j] = chosen_pos[j];
                 }
             }
         }
     }
 }
 
+
+double insert_station_by_all_enumeration(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
+    vector<double> accumulateDistance(length, 0);
+    for (int i = 1; i < length; i++) {
+        accumulateDistance[i] = accumulateDistance[i - 1] + instance.get_distance(route[i], route[i - 1]);
+    }
+    if (accumulateDistance.back() <= instance.max_distance_) {
+        return accumulateDistance.back();
+    }
+
+    int upper_bound = ceil(accumulateDistance.back() / instance.max_distance_);
+    int lower_bound = floor(accumulateDistance.back() / instance.max_distance_);
+    int* chosen_pos = new int[length];
+    int* chosen_sta = new int[length];
+    double cost = numeric_limits<double>::max();
+    for (int i = lower_bound; i <= upper_bound; i++) {
+        try_enumerate_n_stations_to_route(0, i, chosen_sta, chosen_pos, repaired_route, repaired_length, cost, i, route, length, accumulateDistance, instance);
+    }
+    delete[] chosen_pos;
+    delete[] chosen_sta;
+    if (cost != numeric_limits<double>::max()) {
+        return cost;
+    }
+    else {
+        return -1;
+    }
+}
+
+
+void try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, int* chosen_pos, int* repaired_route, int& repaired_length,
+                                       double& cost, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance,
+                                       Case& instance) {
+
+    stack<State> stk;
+
+    // Push the initial state
+    stk.push({m_len, n_len, m_len, 0});
+
+    while (!stk.empty()) {
+        auto& s = stk.top(); // Get the current state
+
+        // If n_len == 0, evaluate the solution
+        if (s.n_len == 0) {
+            stk.pop(); // Backtrack
+            bool feasible = true;
+            double piece_distance = accumulated_distance[chosen_pos[0]] + instance.get_distance(route[chosen_pos[0]], chosen_sta[0]);
+            if (piece_distance > instance.max_distance_) feasible = false;
+
+            for (int k = 1; feasible && k < cur_upper_bound; k++) {
+                piece_distance = accumulated_distance[chosen_pos[k]] - accumulated_distance[chosen_pos[k - 1] + 1];
+                piece_distance += instance.get_distance(chosen_sta[k - 1], route[chosen_pos[k - 1] + 1]);
+                piece_distance += instance.get_distance(chosen_sta[k], route[chosen_pos[k]]);
+                if (piece_distance > instance.max_distance_) feasible = false;
+            }
+
+            piece_distance = accumulated_distance.back() - accumulated_distance[chosen_pos[cur_upper_bound - 1] + 1];
+            piece_distance += instance.get_distance(route[chosen_pos[cur_upper_bound - 1] + 1], chosen_sta[cur_upper_bound - 1]);
+            if (piece_distance > instance.max_distance_) feasible = false;
+
+            if (feasible) {
+                double total_distance = accumulated_distance.back();
+                for (int k = 0; k < cur_upper_bound; k++) {
+                    int first_node = route[chosen_pos[k]];
+                    int second_node = route[chosen_pos[k] + 1];
+                    total_distance -= instance.get_distance(first_node, second_node);
+                    total_distance += instance.get_distance(first_node, chosen_sta[k]);
+                    total_distance += instance.get_distance(chosen_sta[k], second_node);
+                }
+                // produce the repaired route
+                if (total_distance < cost) {
+                    cost = total_distance;
+                    memcpy(repaired_route, route, sizeof(int) * length);
+                    memset(repaired_route + length, 0, sizeof(int) * repaired_length - length);
+                    repaired_length = length;
+
+                    for (int k = cur_upper_bound - 1; k >= 0; k--) {
+                        // Adjust the insertion position based on the number of stations already inserted
+                        int insertPos = chosen_pos[k] + 1;
+
+                        // Shift elements to the right to make space for the new station
+                        for (int i = repaired_length; i > insertPos; i--) {
+                            repaired_route[i] = repaired_route[i - 1];
+                        }
+
+                        // Insert the station
+                        repaired_route[insertPos] = chosen_sta[k];
+
+                        // Update the length of the array
+                        repaired_length++;
+                    }
+                }
+            }
+            continue;
+        }
+
+        // Iterate through route positions
+        if (s.i <= length - 1 - s.n_len) {
+            if (cur_upper_bound == s.n_len) {
+                if (accumulated_distance[s.i] >= instance.max_distance_) {
+                    s.i++;
+                    continue;
+                }
+            } else {
+                if (accumulated_distance[s.i] - accumulated_distance[chosen_pos[cur_upper_bound - s.n_len - 1] + 1] >= instance.max_distance_) {
+                    s.i++;
+                    continue;
+                }
+            }
+
+            if (s.n_len == 1) {
+                if (accumulated_distance.back() - accumulated_distance[s.i + 1] >= instance.max_distance_) {
+                    s.i++;
+                    continue;
+                }
+            }
+
+            // Iterate through stations
+            while (s.stationIdx < instance.num_station_) {
+                chosen_sta[cur_upper_bound - s.n_len] = instance.stations_[s.stationIdx];
+                chosen_pos[cur_upper_bound - s.n_len] = s.i;
+
+                // Push the next state for further exploration
+                stk.push({s.i + 1, s.n_len - 1, s.i + 1, 0});
+                s.stationIdx++;
+                break; // Go deeper
+            }
+
+            // If all stations are processed for the current position
+            if (s.stationIdx == instance.num_station_) {
+                s.stationIdx = 0; // Reset for the next iteration
+                s.i++;            // Move to the next route position
+            }
+        } else {
+            stk.pop(); // Backtrack if no more positions are left
+        }
+    }
+
+}
