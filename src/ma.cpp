@@ -20,6 +20,7 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->mutation_prob = 0.5;
     this->mutation_ind_prob = 0.2;
     this->tournament_size = 2;
+    this->refine_threshold_ratio = 1.5;
 
     this->gammaL = 1.2;
     this->gammaR = 0.8;
@@ -68,6 +69,8 @@ void Ma::run() {
             break;
     }
 
+    global_best = std::move(refine(*global_best, *instance, global_upper_best->upper_cost, refine_threshold_ratio));
+
     if (enable_logging) {
         close_log_for_evolution();  // Close log if logging is enabled
         save_log_for_solution();    // Save the log if logging is enabled
@@ -113,6 +116,9 @@ void Ma::initialize_heuristic() {
     }
     global_best = make_unique<Individual>(route_cap, node_cap);
     global_best->lower_cost = INFEASIBLE;
+
+    global_upper_best = make_unique<Individual>(route_cap, node_cap);
+    global_upper_best->upper_cost = INFEASIBLE;
 }
 
 void Ma::run_heuristic() {
@@ -128,10 +134,20 @@ void Ma::run_heuristic() {
         fix_one_solution(*ind, *instance);
     }
 
+    vector<Individual*> population_raw_ptrs;
+    population_raw_ptrs.reserve(population.size());
+    for (const auto& individual : population) {
+        population_raw_ptrs.push_back(individual.get());
+    }
+
     // iteration-best individual goes to the next iteration
-    auto& iter_best = select_best_individual_ref(population);
-    if (global_best->lower_cost > iter_best.lower_cost) {
-        global_best = make_unique<Individual>(iter_best); // create a new copy of the iter best
+    auto iter_best = select_best_individual_ptr(population_raw_ptrs);
+    if (global_best->lower_cost > iter_best->lower_cost) {
+        global_best = make_unique<Individual>(*iter_best); // create a new copy of the iter best
+    }
+    auto iter_upper_best = select_best_upper_individual_ptr(population_raw_ptrs);
+    if (global_upper_best->upper_cost > iter_upper_best->upper_cost) {
+        global_upper_best = make_unique<Individual>(*iter_upper_best); // create a new copy of the global upper best
     }
 
 
@@ -195,7 +211,7 @@ void Ma::run_heuristic() {
 
     // update the population
     for (int i = 0; i < pop_size; ++i) {
-        if (population[i].get() == &iter_best) continue; // Skip the best individual
+        if (population[i].get() == iter_best) continue; // Skip the best individual
 
         // reset individual & update through chromosome
         population[i]->reset();
@@ -315,6 +331,16 @@ Individual& Ma::select_best_individual_ref(const vector<unique_ptr<Individual>>&
     auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
 
     return **best_individual;
+}
+
+Individual* Ma::select_best_individual_ptr(const vector<Individual*>& individuals) {
+    assert(!individuals.empty());  // Ensure there's at least one individual
+    auto comparator = [](const Individual* ind1, const Individual* ind2) {
+        return ind1->lower_cost < ind2->lower_cost;
+    };
+
+    auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
+    return *best_individual;
 }
 
 Individual* Ma::select_best_upper_individual_ptr(const vector<Individual*>& individuals) {

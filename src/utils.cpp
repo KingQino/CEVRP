@@ -1859,22 +1859,68 @@ void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* bestChosenPos
 }
 
 
-double insert_station_by_all_enumeration(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
-    vector<double> accumulateDistance(length, 0);
-    for (int i = 1; i < length; i++) {
-        accumulateDistance[i] = accumulateDistance[i - 1] + instance.get_distance(route[i], route[i - 1]);
-    }
-    if (accumulateDistance.back() <= instance.max_distance_) {
-        return accumulateDistance.back();
+std::unique_ptr<Individual> refine(Individual& individual, Case& instance, double base_cost, double threshold_ratio) {
+    vector<std::unique_ptr<Individual>> one_point_neighbors = one_point_move_neighbors(individual, instance, base_cost, threshold_ratio);
+    vector<std::unique_ptr<Individual>> two_point_neighbors = two_point_move_neighbors(individual, instance, base_cost, threshold_ratio);
+    vector<std::unique_ptr<Individual>> two_opt_neighbors   =   two_opt_move_neighbors(individual, instance, base_cost, threshold_ratio);
+
+   std::unique_ptr<Individual> best_neighbor = nullptr;
+   double best_cost = numeric_limits<double>::max();
+
+    for(auto& neighbor : one_point_neighbors) {
+        recharging_by_all_enumeration(*neighbor, instance);
+        if (neighbor->lower_cost < best_cost) {
+            best_neighbor = std::move(neighbor);
+            best_cost = best_neighbor->lower_cost;
+        }
     }
 
-    int upper_bound = ceil(accumulateDistance.back() / instance.max_distance_);
-    int lower_bound = floor(accumulateDistance.back() / instance.max_distance_);
+    for(auto& neighbor : two_point_neighbors) {
+        recharging_by_all_enumeration(*neighbor, instance);
+        if (neighbor->lower_cost < best_cost) {
+            best_neighbor = std::move(neighbor);
+            best_cost = best_neighbor->lower_cost;
+        }
+    }
+
+    for(auto& neighbor : two_opt_neighbors) {
+        recharging_by_all_enumeration(*neighbor, instance);
+        if (neighbor->lower_cost < best_cost) {
+            best_neighbor = std::move(neighbor);
+            best_cost = best_neighbor->lower_cost;
+        }
+    }
+
+    return best_neighbor;
+}
+
+void recharging_by_all_enumeration(Individual &individual, Case& instance) {
+    double lower_cost = 0.0;
+
+    individual.start_lower_solution();
+    for (int i = 0; i < individual.num_routes; ++i) {
+        lower_cost += insert_station_by_all_enumeration(individual.routes[i], individual.num_nodes_per_route[i], individual.lower_routes[i], individual.lower_num_nodes_per_route[i], instance);
+    }
+
+    individual.set_lower_cost(lower_cost);
+}
+
+double insert_station_by_all_enumeration(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
+    vector<double> accumulated_distance(length, 0);
+    for (int i = 1; i < length; i++) {
+        accumulated_distance[i] = accumulated_distance[i - 1] + instance.get_distance(route[i], route[i - 1]);
+    }
+    if (accumulated_distance.back() <= instance.max_distance_) {
+        return accumulated_distance.back();
+    }
+
+    int upper_bound = ceil(accumulated_distance.back() / instance.max_distance_);
+    int lower_bound = floor(accumulated_distance.back() / instance.max_distance_);
     int* chosen_pos = new int[length];
     int* chosen_sta = new int[length];
     double cost = numeric_limits<double>::max();
     for (int i = lower_bound; i <= upper_bound; i++) {
-        try_enumerate_n_stations_to_route(0, i, chosen_sta, chosen_pos, repaired_route, repaired_length, cost, i, route, length, accumulateDistance, instance);
+        try_enumerate_n_stations_to_route(0, i, chosen_sta, chosen_pos, repaired_route, repaired_length, cost, i, route, length, accumulated_distance, instance);
     }
     delete[] chosen_pos;
     delete[] chosen_sta;
