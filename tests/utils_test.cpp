@@ -397,15 +397,54 @@ TEST_F(UtilsTest, FixOneSolution) {
             {0, 17, 12, 6, 1, 3, 11, 0},
             {0, 19, 2, 0}
     };
-    vector<int> demand_sum_per_route = {5600, 5200, 2700, 5800, 3200};
-    unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, 678.8177686900328, demand_sum_per_route);
+    double upper_cost = instance->compute_total_distance(routes);
+    vector<int> demand_sum_per_route = instance->compute_demand_sum_per_route(routes);
+    unique_ptr<Individual> ind = std::make_unique<Individual>(8, 22, routes, upper_cost, demand_sum_per_route);
 
     fix_one_solution(*ind, *instance);
-    double fixed_fit = ind->lower_cost;
+    double lower_cost = ind->lower_cost;
     int num_nodes = std::accumulate(ind->lower_num_nodes_per_route, ind->lower_num_nodes_per_route + ind->num_routes, 0);
 
-    EXPECT_EQ(fixed_fit, 685.4783939004661);
+    double truth_lower_cost = 0;
+    for (int i = 0; i < ind->num_routes; ++i) {
+        truth_lower_cost += instance->compute_total_distance(ind->lower_routes[i], ind->lower_num_nodes_per_route[i]);
+    }
+
+    EXPECT_DOUBLE_EQ(lower_cost, truth_lower_cost);
     EXPECT_EQ(num_nodes,  39);
+}
+
+TEST_F(UtilsTest, TryACertainNArray_Stack) {
+    // TODO: If you wanna transfer the function "tryACertainNArray" into a version using stack implementation, plz check this given case
+
+    int* route = new int[22]{0, 17, 12, 6, 1, 3, 11, 0};
+    int length = 8;
+    int* repaired_route = new int[22]{0, 17, 12, 6, 1, 3, 11, 0};
+    int repaired_length = 8;
+
+    double cost_prev = instance->compute_total_distance(route, length);
+
+    double cost_post = insert_station_by_simple_enumeration_array(route, length, repaired_route, repaired_length, *instance);
+
+//    cout << "Cost Prev: " << cost_prev << endl;
+//    cout << "Original Route: ";
+//    for (int i = 0; i < length; ++i) {
+//        cout << route[i] << " ";
+//    }
+//    cout << endl;
+//    cout << "Original Length: " << length << endl;
+//
+//    cout << "Cost Post: " << cost_post << endl;
+//    cout << "Repair Route: ";
+//    for (int i = 0; i < repaired_length; ++i) {
+//        cout << repaired_route[i] << " ";
+//    }
+//    cout << endl;
+//    cout << "Repair Length: " << repaired_length << endl;
+
+
+    delete []route;
+    delete []repaired_route;
 }
 
 TEST_F(UtilsTest, InsertStationBySimpleEnumerationArray) {

@@ -1634,39 +1634,39 @@ void fix_one_solution(Individual &individual, Case& instance) {
 }
 
 double insert_station_by_simple_enumeration_array(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
-    vector<double> accumulateDistance(length, 0);
+    vector<double> accumulated_distance(length, 0);
     for (int i = 1; i < length; i++) {
-        accumulateDistance[i] = accumulateDistance[i - 1] + instance.get_distance(route[i], route[i - 1]);
+        accumulated_distance[i] = accumulated_distance[i - 1] + instance.get_distance(route[i], route[i - 1]);
     }
-    if (accumulateDistance.back() <= instance.max_distance_) {
-        return accumulateDistance.back();
+    if (accumulated_distance.back() <= instance.max_distance_) {
+        return accumulated_distance.back();
     }
 
-    int upper_bound = (int)(accumulateDistance.back() / instance.max_distance_ + 1);
-    int lower_bound = (int)(accumulateDistance.back() / instance.max_distance_);
+    int upper_bound = (int)(accumulated_distance.back() / instance.max_distance_ + 1);
+    int lower_bound = (int)(accumulated_distance.back() / instance.max_distance_);
     int* chosen_pos = new int[length];
-    int* bestChosenPos = new int[length]; // customized variable
+    int* best_chosen_pos = new int[length]; // customized variable
     double final_cost = numeric_limits<double>::max();
     double best_cost = final_cost; // customized variable
     for (int i = lower_bound; i <= upper_bound; i++) {
-        tryACertainNArray(0, i, chosen_pos, bestChosenPos, final_cost, i, route, length, accumulateDistance, instance);
+        tryACertainNArray(0, i, chosen_pos, best_chosen_pos, final_cost, i, route, length, accumulated_distance, instance);
 
         if (final_cost < best_cost) {
             memset(repaired_route, 0, sizeof(int) * repaired_length);
             int currentIndex = 0;
             int idx = 0;
             for (int j = 0; j < i; ++j) {
-                int from = route[bestChosenPos[j]];
-                int to = route[bestChosenPos[j] + 1];
+                int from = route[best_chosen_pos[j]];
+                int to = route[best_chosen_pos[j] + 1];
                 int station = instance.best_station_[from][to];
 
-                int numElementsToCopy = bestChosenPos[j] + 1 - idx;
+                int numElementsToCopy = best_chosen_pos[j] + 1 - idx;
                 memcpy(&repaired_route[currentIndex], &route[idx], numElementsToCopy * sizeof(int));
 
                 currentIndex += numElementsToCopy;
 
                 repaired_route[currentIndex++] = station;
-                idx = bestChosenPos[j] + 1;
+                idx = best_chosen_pos[j] + 1;
             }
 
             int remainingElementsToCopy = length - idx;
@@ -1677,7 +1677,7 @@ double insert_station_by_simple_enumeration_array(int* route, int length, int* r
         }
     }
     delete[] chosen_pos;
-    delete[] bestChosenPos;
+    delete[] best_chosen_pos;
     if (final_cost !=  numeric_limits<double>::max()) {
         return final_cost;
     }
@@ -1811,47 +1811,47 @@ double insert_station_by_remove_array(int* route, int length, int* repaired_rout
     return sum;
 }
 
-void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* bestChosenPos, double& finalfit, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance) {
+void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* best_chosen_pos, double& finalfit, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance) {
     for (int i = m_len; i <= length - 1 - n_len; i++) {
         if (cur_upper_bound == n_len) {
-            double onedis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
-            if (accumulated_distance[i] + onedis > instance.max_distance_) {
+            double one_dis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
+            if (accumulated_distance[i] + one_dis > instance.max_distance_) {
                 break;
             }
         }
         else {
-            int lastpos = chosen_pos[cur_upper_bound - n_len - 1];
-            double onedis = instance.get_distance(route[lastpos + 1], instance.best_station_[route[lastpos]][route[lastpos + 1]]);
-            double twodis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
-            if (accumulated_distance[i] - accumulated_distance[lastpos + 1] + onedis + twodis > instance.max_distance_) {
+            int last_pos = chosen_pos[cur_upper_bound - n_len - 1];
+            double one_dis = instance.get_distance(route[last_pos + 1], instance.best_station_[route[last_pos]][route[last_pos + 1]]);
+            double two_dis = instance.get_distance(route[i], instance.best_station_[route[i]][route[i + 1]]);
+            if (accumulated_distance[i] - accumulated_distance[last_pos + 1] + one_dis + two_dis > instance.max_distance_) {
                 break;
             }
         }
         if (n_len == 1) {
-            double onedis = accumulated_distance.back() - accumulated_distance[i + 1] + instance.get_distance(instance.best_station_[route[i]][route[i + 1]], route[i + 1]);
-            if (onedis > instance.max_distance_) {
+            double one_dis = accumulated_distance.back() - accumulated_distance[i + 1] + instance.get_distance(instance.best_station_[route[i]][route[i + 1]], route[i + 1]);
+            if (one_dis > instance.max_distance_) {
                 continue;
             }
         }
 
         chosen_pos[cur_upper_bound - n_len] = i;
         if (n_len > 1) {
-            tryACertainNArray(i + 1, n_len - 1, chosen_pos,  bestChosenPos, finalfit, cur_upper_bound, route, length, accumulated_distance, instance);
+            tryACertainNArray(i + 1, n_len - 1, chosen_pos,  best_chosen_pos, finalfit, cur_upper_bound, route, length, accumulated_distance, instance);
         }
         else {
-            double disum = accumulated_distance.back();
+            double dis_sum = accumulated_distance.back();
             for (int j = 0; j < cur_upper_bound; j++) {
                 int first_node = route[chosen_pos[j]];
                 int second_node = route[chosen_pos[j] + 1];
-                int thestation = instance.best_station_[first_node][second_node];
-                disum -= instance.get_distance(first_node, second_node);
-                disum += instance.get_distance(first_node, thestation);
-                disum += instance.get_distance(second_node, thestation);
+                int the_station = instance.best_station_[first_node][second_node];
+                dis_sum -= instance.get_distance(first_node, second_node);
+                dis_sum += instance.get_distance(first_node, the_station);
+                dis_sum += instance.get_distance(second_node, the_station);
             }
-            if (disum < finalfit) {
-                finalfit = disum;
+            if (dis_sum < finalfit) {
+                finalfit = dis_sum;
                 for (int j = 0; j < length; ++j) {
-                    bestChosenPos[j] = chosen_pos[j];
+                    best_chosen_pos[j] = chosen_pos[j];
                 }
             }
         }
