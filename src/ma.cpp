@@ -18,7 +18,7 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->immigrant_ratio = 0.05;
     this->crossover_prob = 1.0;
     this->mutation_prob = 0.5;
-    this->mutation_ind_prob = 0.2;
+    this->mutation_ind_prob = 0.4;
     this->tournament_size = 2;
     this->refine_threshold_ratio = 1.5;
 
