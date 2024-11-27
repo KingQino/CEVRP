@@ -1860,34 +1860,27 @@ void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* best_chosen_p
 
 
 std::unique_ptr<Individual> refine(Individual& individual, Case& instance, double base_cost, double threshold_ratio) {
-    vector<std::unique_ptr<Individual>> one_point_neighbors = one_point_move_neighbors(individual, instance, base_cost, threshold_ratio);
-    vector<std::unique_ptr<Individual>> two_point_neighbors = two_point_move_neighbors(individual, instance, base_cost, threshold_ratio);
-    vector<std::unique_ptr<Individual>> two_opt_neighbors   =   two_opt_move_neighbors(individual, instance, base_cost, threshold_ratio);
+    // Generate all neighbors
+    vector<std::unique_ptr<Individual>> neighbors;
+    auto append_neighbors = [&neighbors](auto&& new_neighbors) {
+        neighbors.insert(neighbors.end(),
+                         std::make_move_iterator(new_neighbors.begin()),
+                         std::make_move_iterator(new_neighbors.end()));
+    };
 
-   std::unique_ptr<Individual> best_neighbor = nullptr;
-   double best_cost = numeric_limits<double>::max();
+    append_neighbors(one_point_move_neighbors(individual, instance, base_cost, threshold_ratio));
+    append_neighbors(two_point_move_neighbors(individual, instance, base_cost, threshold_ratio));
+    append_neighbors(two_opt_move_neighbors(individual, instance, base_cost, threshold_ratio));
 
-    for(auto& neighbor : one_point_neighbors) {
+    // Find the best neighbor
+    std::unique_ptr<Individual> best_neighbor = nullptr;
+    double best_cost = std::numeric_limits<double>::max();
+
+    for (auto& neighbor : neighbors) {
         recharging_by_all_enumeration(*neighbor, instance);
         if (neighbor->lower_cost < best_cost) {
+            best_cost = neighbor->lower_cost;
             best_neighbor = std::move(neighbor);
-            best_cost = best_neighbor->lower_cost;
-        }
-    }
-
-    for(auto& neighbor : two_point_neighbors) {
-        recharging_by_all_enumeration(*neighbor, instance);
-        if (neighbor->lower_cost < best_cost) {
-            best_neighbor = std::move(neighbor);
-            best_cost = best_neighbor->lower_cost;
-        }
-    }
-
-    for(auto& neighbor : two_opt_neighbors) {
-        recharging_by_all_enumeration(*neighbor, instance);
-        if (neighbor->lower_cost < best_cost) {
-            best_neighbor = std::move(neighbor);
-            best_cost = best_neighbor->lower_cost;
         }
     }
 
