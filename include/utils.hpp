@@ -24,17 +24,26 @@ using namespace std;
 
 
 // used in 2-opt*, define the hash relationship to make sure one-to-one mapping between route pairs
-struct pair_hash
+typedef struct tPairHash
 {
     size_t operator() (pair<int, int> const & apair) const {
         return apair.first * 256 + apair.second;
     }
-};
+} PairHash;
 
-// Stack to simulate recursion
-struct State {
+// This structure is used in the "enumerate stations"
+typedef struct tState {
     int m_len, n_len, i, stationIdx; // Current state variables
-};
+} State;
+
+// This struct is used to store the charging station information for the given route
+typedef struct tChargingMeta {
+    double cost; // cost after applying recharging decision
+    int num_stations; // num of stations
+    vector<int> chosen_pos; // chosen position
+    vector<int> chosen_sta; // chosen station
+} ChargingMeta;
+
 
 // split - transfer a chromosome into upper-solution
 vector<vector<int>> prins_split(const vector<int>& chromosome, Case& instance);
@@ -49,8 +58,8 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
 // upper-level optimisation: local search operators => minimise the upper cost
 // due to the observation that the lower cost (CEVRP) is highly positive correlation with the upper cost (CVRP)
 // helper functions
-unordered_set<pair<int, int>, pair_hash> get_route_pairs(int num_routes);
-void update_route_pairs(unordered_set<pair<int, int>, pair_hash>& route_pairs, int r1, int r2);
+unordered_set<pair<int, int>, PairHash> get_route_pairs(int num_routes);
+void update_route_pairs(unordered_set<pair<int, int>, PairHash>& route_pairs, int r1, int r2);
 void moveItoJ(int* route, int a, int b);
 bool contains(const int* array, int size, int element);
 // operators
@@ -101,10 +110,12 @@ void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* best_chosen_p
 
 // refine: neighbourhood expanding + recharging all enumeration
 std::unique_ptr<Individual> refine(Individual& individual, Case& instance, double base_cost, double threshold_ratio);
+std::unique_ptr<Individual> refine_limited_memory(Individual& individual, Case& instance, double base_cost, double threshold_ratio);
 void recharging_by_all_enumeration(Individual& individual, Case& instance);
+tuple<double, int*, int> insert_station_by_all_enumeration(int* route, int length, Case& instance);
 double insert_station_by_all_enumeration(int* route, int length, int* repaired_route, int& repaired_length, Case& instance);
-void try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, int* chosen_pos, int* repaired_route, int& repaired_length,
-                                       double& cost, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance);
+ChargingMeta try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, int* chosen_pos, double& cost,
+                                               int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance);
 
 
 
