@@ -14,6 +14,7 @@ protected:
         string file_name_ = "E-n22-k4.evrp";
         instance = new Case(1, file_name_);
         ma = new Ma(instance, 1, 0, false);
+        random_engine = std::default_random_engine(0);
     }
 
     void TearDown() override {
@@ -23,6 +24,7 @@ protected:
 
     Case* instance{};
     Ma* ma{};
+    std::default_random_engine random_engine;
 };
 
 
@@ -43,7 +45,7 @@ TEST_F(MaTest, CalculateDiversityByNormalizedFitnessDifference) {
 
 TEST_F(MaTest, SelectRandom) {
     std::vector<int> chromosome = {1, 2, 3, 4, 5};
-    std::vector<int> selected_indices = Ma::select_random(5, 2, ma->random_engine);
+    std::vector<int> selected_indices = Ma::select_random(5, 2, random_engine);
 
     EXPECT_EQ(selected_indices.size(), 2);
     EXPECT_EQ(chromosome.at(selected_indices[0]), 2);
@@ -53,9 +55,9 @@ TEST_F(MaTest, CxPartiallyMatched) {
     std::vector<int> parent1(instance->num_customer_);
     std::iota(parent1.begin(), parent1.end(), 1);
     vector<int> parent2(parent1);
-    std::shuffle(parent2.begin(), parent2.end(), ma->random_engine);
+    std::shuffle(parent2.begin(), parent2.end(), random_engine);
 
-    ma->cx_partially_matched(parent1, parent2, ma->random_engine);
+    ma->cx_partially_matched(parent1, parent2, random_engine);
 
     EXPECT_EQ(parent1.size(), instance->num_customer_);
     EXPECT_EQ(parent2.size(), instance->num_customer_);
