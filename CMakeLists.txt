@@ -43,4 +43,11 @@ if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
             tests/ma_test.cpp)
     target_include_directories(Tests PRIVATE include external/include) # Include directories for the tests
     target_link_libraries(Tests gtest gtest_main) # Link GoogleTest for tests
+
+    # Custom target to run Valgrind on the test executable
+    add_custom_target(valgrind_tests
+            COMMAND valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind_tests.log ./Tests
+            DEPENDS Tests
+            COMMENT "Running Valgrind on test executable..."
+    )
 endif()
