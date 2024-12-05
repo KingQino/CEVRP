@@ -324,8 +324,8 @@ void two_opt_for_individual(Individual& individual, Case& instance) {
     }
 }
 
-unordered_set<pair<int, int>, pair_hash> get_route_pairs(int num_routes) {
-    unordered_set<pair<int, int>, pair_hash> route_pairs;
+unordered_set<pair<int, int>, PairHash> get_route_pairs(int num_routes) {
+    unordered_set<pair<int, int>, PairHash> route_pairs;
     for (int i = 0; i < num_routes - 1; i++) {
         for (int j = i + 1; j < num_routes; j++) {
             route_pairs.insert(make_pair(i, j));
@@ -335,7 +335,7 @@ unordered_set<pair<int, int>, pair_hash> get_route_pairs(int num_routes) {
     return route_pairs;
 }
 
-void update_route_pairs(unordered_set<pair<int, int>, pair_hash>& route_pairs, int r1, int r2) {
+void update_route_pairs(unordered_set<pair<int, int>, PairHash>& route_pairs, int r1, int r2) {
     for (int i = 0; i < r1; i++) route_pairs.insert({i, r1});
     for (int i = 0; i < r2; i++) route_pairs.insert({i, r2});
 }
@@ -515,7 +515,7 @@ bool two_opt_move_inter_route_for_individual_acceleration(Individual& individual
 
     bool flag = false;
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
     while (!route_pairs.empty()) {
         auto [r1, r2] = *route_pairs.begin();
         route_pairs.erase(route_pairs.begin());
@@ -565,7 +565,7 @@ bool two_opt_move_inter_route_for_individual(Individual& individual, Case& insta
 
     bool flag = false;
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
     while (!route_pairs.empty()) {
         auto [r1, r2] = *route_pairs.begin();
         route_pairs.erase(route_pairs.begin());
@@ -616,7 +616,7 @@ bool two_opt_star_for_individual(Individual& individual, Case& instance) {
         return false;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
     int* temp_r1 = new int[individual.node_cap];
     int* temp_r2 = new int[individual.node_cap];
     bool updated = false;
@@ -924,7 +924,7 @@ bool one_point_move_inter_route_for_individual_acceleration(Individual& individu
         return false;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
 
     while (!route_pairs.empty())
     {
@@ -966,7 +966,7 @@ bool one_point_move_inter_route_for_individual(Individual& individual, Case& ins
         return false;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
 
     while (!route_pairs.empty())
     {
@@ -1119,7 +1119,7 @@ bool two_point_move_inter_route_for_individual(Individual& individual, Case& ins
         return false;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
 
     while (!route_pairs.empty())
     {
@@ -1138,7 +1138,7 @@ bool two_point_move_inter_route_for_individual_acceleration(Individual& individu
         return false;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
 
     while (!route_pairs.empty())
     {
@@ -1222,7 +1222,7 @@ vector<std::unique_ptr<Individual>> one_point_inter_route_for_individual(Individ
         return neighborhoods;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
 
     while (!route_pairs.empty())
     {
@@ -1358,7 +1358,7 @@ vector<std::unique_ptr<Individual>> two_point_inter_route_for_individual(Individ
         return neighborhoods;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
 
     while (!route_pairs.empty())
     {
@@ -1462,7 +1462,7 @@ vector<std::unique_ptr<Individual>> two_opt_inter_route_for_individual(Individua
         return neighborhoods;
     }
 
-    unordered_set<pair<int, int>, pair_hash> route_pairs = get_route_pairs(individual.num_routes);
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
     int* temp_r1 = new int[individual.node_cap];
     int* temp_r2 = new int[individual.node_cap];
     bool updated = false;
@@ -1859,6 +1859,12 @@ void tryACertainNArray(int m_len, int n_len, int* chosen_pos, int* best_chosen_p
 }
 
 
+std::unique_ptr<Individual> refine_limited_memory(Individual& individual, Case& instance, double base_cost, double threshold_ratio) {
+    double threshold = base_cost * threshold_ratio;
+
+}
+
+
 std::unique_ptr<Individual> refine(Individual& individual, Case& instance, double base_cost, double threshold_ratio) {
     // Generate all neighbors
     vector<std::unique_ptr<Individual>> neighbors;
@@ -1898,6 +1904,51 @@ void recharging_by_all_enumeration(Individual &individual, Case& instance) {
     individual.set_lower_cost(lower_cost);
 }
 
+tuple<double, int*, int> insert_station_by_all_enumeration(int* route, int length, Case& instance) {
+    vector<double> accumulated_distance(length, 0);
+    for (int i = 1; i < length; i++) {
+        accumulated_distance[i] = accumulated_distance[i - 1] + instance.get_distance(route[i], route[i - 1]);
+    }
+    if (accumulated_distance.back() <= instance.max_distance_) {
+        return std::make_tuple(accumulated_distance.back(), nullptr, 0);
+    }
+
+    int* repaired_route = new int [2 * length];
+    int repaired_length = length;
+
+    int upper_bound = ceil(accumulated_distance.back() / instance.max_distance_);
+    int lower_bound = floor(accumulated_distance.back() / instance.max_distance_);
+    int* chosen_pos = new int[length];
+    int* chosen_sta = new int[length];
+    double cost = numeric_limits<double>::max();
+    ChargingMeta meta;
+    meta.cost = numeric_limits<double>::max();
+    for (int i = lower_bound; i <= upper_bound; i++) {
+        ChargingMeta iter_meta = try_enumerate_n_stations_to_route(0, i, chosen_sta, chosen_pos,cost, i, route, length, accumulated_distance, instance);
+        if (cost != numeric_limits<double>::max() && cost < meta.cost) {
+            meta = iter_meta;
+        }
+    }
+    delete[] chosen_pos;
+    delete[] chosen_sta;
+    if (cost != numeric_limits<double>::max()) {
+        for (int k = meta.num_stations - 1; k >= 0; k--) {
+            int insertPos = meta.chosen_pos[k] + 1;
+            for (int i = repaired_length; i > insertPos; i--) {
+                repaired_route[i] = repaired_route[i - 1];
+            }
+            repaired_route[insertPos] = meta.chosen_sta[k];
+            repaired_length++;
+        }
+
+        return std::make_tuple(cost, repaired_route, repaired_length);
+    }
+    else {
+        return std::make_tuple(-1, nullptr, 0);
+    }
+
+}
+
 double insert_station_by_all_enumeration(int* route, int length, int* repaired_route, int& repaired_length, Case& instance) {
     vector<double> accumulated_distance(length, 0);
     for (int i = 1; i < length; i++) {
@@ -1912,12 +1963,26 @@ double insert_station_by_all_enumeration(int* route, int length, int* repaired_r
     int* chosen_pos = new int[length];
     int* chosen_sta = new int[length];
     double cost = numeric_limits<double>::max();
+    ChargingMeta meta;
+    meta.cost = numeric_limits<double>::max();
     for (int i = lower_bound; i <= upper_bound; i++) {
-        try_enumerate_n_stations_to_route(0, i, chosen_sta, chosen_pos, repaired_route, repaired_length, cost, i, route, length, accumulated_distance, instance);
+        ChargingMeta iter_meta = try_enumerate_n_stations_to_route(0, i, chosen_sta, chosen_pos,cost, i, route, length, accumulated_distance, instance);
+        if (cost != numeric_limits<double>::max() && cost < meta.cost) {
+            meta = iter_meta;
+        }
     }
     delete[] chosen_pos;
     delete[] chosen_sta;
     if (cost != numeric_limits<double>::max()) {
+        for (int k = meta.num_stations - 1; k >= 0; k--) {
+            int insertPos = meta.chosen_pos[k] + 1;
+            for (int i = repaired_length; i > insertPos; i--) {
+                repaired_route[i] = repaired_route[i - 1];
+            }
+            repaired_route[insertPos] = meta.chosen_sta[k];
+            repaired_length++;
+        }
+
         return cost;
     }
     else {
@@ -1926,9 +1991,10 @@ double insert_station_by_all_enumeration(int* route, int length, int* repaired_r
 }
 
 
-void try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, int* chosen_pos, int* repaired_route, int& repaired_length,
-                                       double& cost, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance,
-                                       Case& instance) {
+ChargingMeta try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, int* chosen_pos,
+                                       double& cost, int cur_upper_bound, int* route, int length, vector<double>& accumulated_distance, Case& instance) {
+
+    ChargingMeta meta;
 
     stack<State> stk;
 
@@ -1968,25 +2034,10 @@ void try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, in
                 // produce the repaired route
                 if (total_distance < cost) {
                     cost = total_distance;
-                    memcpy(repaired_route, route, sizeof(int) * length);
-                    memset(repaired_route + length, 0, sizeof(int) * repaired_length - length);
-                    repaired_length = length;
-
-                    for (int k = cur_upper_bound - 1; k >= 0; k--) {
-                        // Adjust the insertion position based on the number of stations already inserted
-                        int insertPos = chosen_pos[k] + 1;
-
-                        // Shift elements to the right to make space for the new station
-                        for (int i = repaired_length; i > insertPos; i--) {
-                            repaired_route[i] = repaired_route[i - 1];
-                        }
-
-                        // Insert the station
-                        repaired_route[insertPos] = chosen_sta[k];
-
-                        // Update the length of the array
-                        repaired_length++;
-                    }
+                    meta.cost = cost;
+                    meta.num_stations = cur_upper_bound;
+                    meta.chosen_pos.assign(chosen_pos, chosen_pos + meta.num_stations);
+                    meta.chosen_sta.assign(chosen_sta, chosen_sta + meta.num_stations);
                 }
             }
             continue;
@@ -2034,4 +2085,5 @@ void try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen_sta, in
         }
     }
 
+    return meta;
 }

@@ -982,6 +982,32 @@ TEST_F(UtilsTest, Refine_InsertStationByAllEnumeration) {
     EXPECT_LE(total_dis, ind_->lower_cost);
 }
 
+TEST_F(UtilsTest, InsertStationByAllEnumeration) {
+    int* route = new int [22]{0, 15, 2, 7, 20, 4, 6, 0};
+//    int* route = new int [22]{0, 13, 5, 8, 19, 0};
+//    int* route = new int [22]{0, 17, 9, 21, 3, 18, 12, 10, 0};
+    int length = 8;
+
+    int* repaired_route = new int [22]{0, 15, 2, 7, 20, 4, 6, 0};
+//    int* repaired_route = new int [22]{0, 13, 5, 8, 19, 0};
+//    int* repaired_route = new int [22]{0, 17, 9, 21, 3, 18, 12, 10, 0};
+    int repaired_length = 8;
+
+
+    double original_cost = instance->compute_total_distance(route, length);
+
+    double cost = insert_station_by_all_enumeration(route, length, repaired_route, repaired_length, *instance);
+
+    double ground_truth_cost = instance->compute_total_distance(repaired_route, repaired_length);
+
+    EXPECT_LE(length, repaired_length);
+    EXPECT_LE(original_cost, cost);
+    EXPECT_DOUBLE_EQ(cost, ground_truth_cost);
+
+    delete[] route;
+    delete[] repaired_route;
+}
+
 TEST_F(UtilsTest, Refine_RefineRecharging) {
     vector<vector<int>> routes = {
             {0, 15, 2, 7, 20, 4, 6, 0},
@@ -1027,3 +1053,16 @@ TEST_F(UtilsTest, Refine) {
     EXPECT_DOUBLE_EQ(truth_cost, ind_ptr->lower_cost);
 }
 
+
+TEST_F(UtilsTest, RefineLimitedMemory) {
+//    int* route = new int [5]{1,2,3,4,5};
+//
+//    swap(route[2], route[4]);
+//
+//    for (int i = 0; i < 5; ++i) {
+//        cout << route[i] << " ";
+//    }
+//    cout << endl;
+//
+//    delete[] route;
+}
