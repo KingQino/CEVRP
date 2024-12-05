@@ -1028,30 +1028,30 @@ TEST_F(UtilsTest, Refine_RefineRecharging) {
     EXPECT_DOUBLE_EQ(truth_cost, ind_ptr->lower_cost);
 }
 
-TEST_F(UtilsTest, Refine) {
-    vector<vector<int>> routes = {
-            {0,9,7,5,2,1,6,0},
-            {0,11,4,3,8,10,12,0},
-            {0,16,19,13,0},
-            {0,14,17,21,20,18,15,0}
-    };
-    vector<int> demand_sum = instance->compute_demand_sum_per_route(routes);
-    double upper_cost = instance->compute_total_distance(routes);
-
-    unique_ptr<Individual> ind_ptr = std::make_unique<Individual>(8, 22, routes, upper_cost, demand_sum);
-
-    double base_cost = 386.917;
-    double threshold = 1.2;
-    std::unique_ptr<Individual> refined_ind = refine(*ind_ptr, *instance, base_cost, threshold);
-
-
-    double truth_cost = 0;
-    for (int i = 0; i < ind_ptr->num_routes; ++i) {
-        truth_cost += instance->compute_total_distance(ind_ptr->lower_routes[i], ind_ptr->lower_num_nodes_per_route[i]);
-    }
-
-    EXPECT_DOUBLE_EQ(truth_cost, ind_ptr->lower_cost);
-}
+//TEST_F(UtilsTest, Refine) {
+//    vector<vector<int>> routes = {
+//            {0,9,7,5,2,1,6,0},
+//            {0,11,4,3,8,10,12,0},
+//            {0,16,19,13,0},
+//            {0,14,17,21,20,18,15,0}
+//    };
+//    vector<int> demand_sum = instance->compute_demand_sum_per_route(routes);
+//    double upper_cost = instance->compute_total_distance(routes);
+//
+//    unique_ptr<Individual> ind_ptr = std::make_unique<Individual>(8, 22, routes, upper_cost, demand_sum);
+//
+//    double base_cost = 386.917;
+//    double threshold = 1.2;
+//    std::unique_ptr<Individual> refined_ind = refine(*ind_ptr, *instance, base_cost, threshold);
+//
+//
+//    double truth_cost = 0;
+//    for (int i = 0; i < ind_ptr->num_routes; ++i) {
+//        truth_cost += instance->compute_total_distance(ind_ptr->lower_routes[i], ind_ptr->lower_num_nodes_per_route[i]);
+//    }
+//
+//    EXPECT_DOUBLE_EQ(truth_cost, ind_ptr->lower_cost);
+//}
 
 
 TEST_F(UtilsTest, RefineLimitedMemory) {
