@@ -307,9 +307,9 @@ TEST_F(UtilsTest, OnePointMoveInterRouteForIndividual) {
 //    cout << "Fitness value: " << cost << endl;
 //    double cost_validation = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
 //    cout << "New Cost: " << cost_validation << endl;
-//
-//    delete[] route1;
-//    delete[] route2;
+
+    delete[] route1;
+    delete[] route2;
 
     vector<vector<int>> routes = routes_constructor_with_split(*instance, rng);
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes,
