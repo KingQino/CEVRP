@@ -14,6 +14,7 @@
 #include <unordered_set>
 #include <list>
 #include <stack>
+#include <functional>
 
 #include "case.hpp"
 #include "individual.hpp"
