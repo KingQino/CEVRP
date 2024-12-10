@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "utils.hpp"
+#include "stats_interface.hpp"
 
 using namespace ::testing;
 using namespace std;
@@ -1077,4 +1078,264 @@ TEST_F(UtilsTest, RefineLimitedMemory) {
     }
 
     EXPECT_DOUBLE_EQ(truth_cost, ind_ptr->lower_cost);
+}
+
+TEST_F(UtilsTest, ComparisonLocalSearchOperators_One) {
+//    vector<string> file_names = {"E-n22-k4.evrp", "X-n214-k11.evrp", "X-n1001-k43.evrp"};
+    vector<string> file_names = {"E-n22-k4.evrp", "E-n23-k3.evrp", "E-n30-k3.evrp", "E-n33-k4.evrp", "E-n51-k5.evrp", "E-n76-k7.evrp",
+                                 "E-n101-k8.evrp", "X-n143-k7.evrp", "X-n214-k11.evrp", "X-n351-k40.evrp", "X-n459-k26.evrp",
+                                 "X-n573-k30.evrp", "X-n685-k75.evrp", "X-n749-k98.evrp", "X-n819-k171.evrp", "X-n916-k207.evrp",
+                                 "X-n1001-k43.evrp"};
+
+    // Define local search operators
+    vector<std::pair<string, std::function<void(Individual&, Case&)>>> local_search_operators = {
+            {"2-opt intra", two_opt_for_individual},
+            {"2-opt inter", two_opt_star_for_individual},
+            {"node shift intra", one_point_move_intra_route_for_individual},
+            {"node shift inter", one_point_move_inter_route_for_individual},
+            {"two nodes swap intra", two_point_move_intra_route_for_individual},
+            {"two nodes swap inter", two_point_move_inter_route_for_individual}
+    };
+
+    int num_individuals = 10'000;
+
+    for (const auto & local_search_operator : local_search_operators) {
+        const string& operator_name = local_search_operator.first;
+        const auto& operator_function = local_search_operator.second;
+        cout << "Local search operator: " << operator_name << endl;
+        for (const auto& file_name : file_names) {
+            cout << "File name: " << file_name << endl;
+            Case* exp_instance = new Case(1, file_name);
+
+            int route_cap = 3 * exp_instance->num_vehicle_;
+            int node_cap = exp_instance->num_customer_ + exp_instance->num_depot_;
+            vector<unique_ptr<Individual>> population;
+            for (int i = 0; i < num_individuals; ++i) {
+                vector<vector<int>> routes = routes_constructor_with_split(*exp_instance, rng);
+                population.push_back(std::make_unique<Individual>(route_cap, node_cap, routes,
+                                                                  exp_instance->compute_total_distance(routes),
+                                                                  exp_instance->compute_demand_sum_per_route(routes)));
+            }
+
+            vector<double> evals_used_per_operation;
+            vector<double> cost_improvement_per_operation;
+
+            double evals_prev, evals_after;
+            double original_cost, optimised_cost;
+
+            for (auto& ind : population) {
+                evals_prev = exp_instance->get_evals();
+                original_cost = ind->upper_cost;
+
+                // Apply the current local search operator
+                operator_function(*ind, *exp_instance);
+
+                optimised_cost = ind->upper_cost;
+                evals_after = exp_instance->get_evals();
+
+                evals_used_per_operation.push_back(evals_after - evals_prev);
+                cost_improvement_per_operation.push_back((original_cost - optimised_cost) / original_cost);
+            }
+
+            Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
+            cout << "evals used when using the operator for individuals: " << endl;
+            cout << "Mean " << evals_indicators.avg << "\t \tStd Dev " << evals_indicators.std << endl;
+            cout << "Min: " << evals_indicators.min << "\t " << endl;
+            cout << "Max: " << evals_indicators.max << "\t " << endl;
+
+            Indicators cost_improvement_indicators = StatsInterface::calculate_statistical_indicators(cost_improvement_per_operation);
+            cout << "cost reduction percentage: " << endl;
+            cout << "Mean " << cost_improvement_indicators.avg << "\t \tStd Dev " << cost_improvement_indicators.std << endl;
+            cout << "Min: " << cost_improvement_indicators.min << "\t " << endl;
+            cout << "Max: " << cost_improvement_indicators.max << "\t " << endl;
+
+            delete exp_instance;
+        }
+        cout << endl << endl;
+    }
+
+    EXPECT_TRUE(true);
+}
+
+
+TEST_F(UtilsTest, ComparisonLocalSearchOperators_Two) {
+    vector<string> file_names = {"E-n22-k4.evrp", "E-n23-k3.evrp", "E-n30-k3.evrp", "E-n33-k4.evrp", "E-n51-k5.evrp", "E-n76-k7.evrp",
+                                 "E-n101-k8.evrp", "X-n143-k7.evrp", "X-n214-k11.evrp", "X-n351-k40.evrp", "X-n459-k26.evrp",
+                                 "X-n573-k30.evrp", "X-n685-k75.evrp", "X-n749-k98.evrp", "X-n819-k171.evrp", "X-n916-k207.evrp",
+                                 "X-n1001-k43.evrp"};
+
+    // Define local search operators
+    vector<std::pair<string, std::function<void(Individual&, Case&)>>> local_search_operators = {
+            {"2-opt intra", two_opt_for_individual},
+            {"2-opt inter", two_opt_star_for_individual},
+            {"node shift intra", one_point_move_intra_route_for_individual},
+            {"node shift inter", one_point_move_inter_route_for_individual},
+            {"two nodes swap intra", two_point_move_intra_route_for_individual},
+            {"two nodes swap inter", two_point_move_inter_route_for_individual}
+    };
+
+    // Define sequences of operators
+    vector<vector<std::pair<string, std::function<void(Individual&, Case&)>>>> operator_sequences = {
+            {local_search_operators[0], local_search_operators[1]},  // 2-opt intra + 2-opt inter
+            {local_search_operators[2], local_search_operators[3]},  // node shift intra + node shift inter
+            {local_search_operators[4], local_search_operators[5]},  // two nodes swap intra + two nodes swap inter
+    };
+
+    int num_individuals = 10'000;
+
+    for (const auto & sequence : operator_sequences) {
+        cout << "Operator sequence: ";
+        for (const auto& [name, _] : sequence) {
+            cout << name << " | ";
+        }
+        cout << endl;
+
+        for (const auto& file_name : file_names) {
+            cout << "Instance: " << file_name << endl;
+            Case* exp_instance = new Case(1, file_name);
+
+            int route_cap = 3 * exp_instance->num_vehicle_;
+            int node_cap = exp_instance->num_customer_ + exp_instance->num_depot_;
+            vector<unique_ptr<Individual>> population;
+            for (int i = 0; i < num_individuals; ++i) {
+                vector<vector<int>> routes = routes_constructor_with_split(*exp_instance, rng);
+                population.push_back(std::make_unique<Individual>(route_cap, node_cap, routes,
+                                                                  exp_instance->compute_total_distance(routes),
+                                                                  exp_instance->compute_demand_sum_per_route(routes)));
+            }
+
+            vector<double> evals_used_per_operation;
+            vector<double> cost_improvement_per_operation;
+
+            double evals_prev, evals_after;
+            double original_cost, optimised_cost;
+
+            for (auto& ind : population) {
+                evals_prev = exp_instance->get_evals();
+                original_cost = ind->upper_cost;
+
+                // Apply the sequence of operators
+                vector<std::function<void(Individual&, Case&)>> operator_functions;
+                operator_functions.reserve(sequence.size());
+                for (const auto& [_, func] : sequence) {
+                    operator_functions.push_back(func);
+                }
+                apply_multiple_operators(*ind, *exp_instance, operator_functions);
+
+                optimised_cost = ind->upper_cost;
+                evals_after = exp_instance->get_evals();
+
+                evals_used_per_operation.push_back(evals_after - evals_prev);
+                cost_improvement_per_operation.push_back((original_cost - optimised_cost) / original_cost);
+            }
+
+            Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
+            cout << "evals used when using the operator for individuals: " << endl;
+            cout << "Mean " << evals_indicators.avg << "\t \tStd Dev " << evals_indicators.std << endl;
+            cout << "Min: " << evals_indicators.min << "\t " << endl;
+            cout << "Max: " << evals_indicators.max << "\t " << endl;
+
+            Indicators cost_improvement_indicators = StatsInterface::calculate_statistical_indicators(cost_improvement_per_operation);
+            cout << "cost reduction percentage: " << endl;
+            cout << "Mean " << cost_improvement_indicators.avg << "\t \tStd Dev " << cost_improvement_indicators.std << endl;
+            cout << "Min: " << cost_improvement_indicators.min << "\t " << endl;
+            cout << "Max: " << cost_improvement_indicators.max << "\t " << endl;
+
+            delete exp_instance;
+        }
+        cout << endl << endl;
+    }
+
+    EXPECT_TRUE(true);
+}
+
+TEST_F(UtilsTest, ComparisonLocalSearchOperators_Three) {
+    vector<string> file_names = {"E-n22-k4.evrp", "E-n23-k3.evrp", "E-n30-k3.evrp", "E-n33-k4.evrp", "E-n51-k5.evrp", "E-n76-k7.evrp",
+                                 "E-n101-k8.evrp", "X-n143-k7.evrp", "X-n214-k11.evrp", "X-n351-k40.evrp", "X-n459-k26.evrp",
+                                 "X-n573-k30.evrp", "X-n685-k75.evrp", "X-n749-k98.evrp", "X-n819-k171.evrp", "X-n916-k207.evrp",
+                                 "X-n1001-k43.evrp"};
+
+    // Define local search operators
+    vector<std::pair<string, std::function<void(Individual&, Case&)>>> local_search_operators = {
+            {"2-opt intra", two_opt_for_individual},
+            {"2-opt inter", two_opt_star_for_individual},
+            {"node shift intra", one_point_move_intra_route_for_individual},
+            {"node shift inter", one_point_move_inter_route_for_individual},
+            {"two nodes swap intra", two_point_move_intra_route_for_individual},
+            {"two nodes swap inter", two_point_move_inter_route_for_individual}
+    };
+
+    // Define sequences of operators
+    vector<vector<std::pair<string, std::function<void(Individual&, Case&)>>>> operator_sequences = {
+            {local_search_operators[0], local_search_operators[1], local_search_operators[0]},  // 2-opt intra + 2-opt inter
+            {local_search_operators[2], local_search_operators[3], local_search_operators[2]},  // node shift intra + node shift inter
+            {local_search_operators[4], local_search_operators[5], local_search_operators[4]},  // two nodes swap intra + two nodes swap inter
+    };
+
+    int num_individuals = 10;
+
+    for (const auto & sequence : operator_sequences) {
+        cout << "Operator sequence: ";
+        for (const auto& [name, _] : sequence) {
+            cout << name << " | ";
+        }
+        cout << endl;
+
+        for (const auto& file_name : file_names) {
+            cout << "Instance: " << file_name << endl;
+            Case* exp_instance = new Case(1, file_name);
+
+            int route_cap = 3 * exp_instance->num_vehicle_;
+            int node_cap = exp_instance->num_customer_ + exp_instance->num_depot_;
+            vector<unique_ptr<Individual>> population;
+            for (int i = 0; i < num_individuals; ++i) {
+                vector<vector<int>> routes = routes_constructor_with_split(*exp_instance, rng);
+                population.push_back(std::make_unique<Individual>(route_cap, node_cap, routes,
+                                                                  exp_instance->compute_total_distance(routes),
+                                                                  exp_instance->compute_demand_sum_per_route(routes)));
+            }
+
+            vector<double> evals_used_per_operation;
+            vector<double> cost_improvement_per_operation;
+
+            double evals_prev, evals_after;
+            double original_cost, optimised_cost;
+
+            for (auto& ind : population) {
+                evals_prev = exp_instance->get_evals();
+                original_cost = ind->upper_cost;
+
+                // Apply the sequence of operators
+                vector<std::function<void(Individual&, Case&)>> operator_functions;
+                operator_functions.reserve(sequence.size());
+                for (const auto& [_, func] : sequence) {
+                    operator_functions.push_back(func);
+                }
+                apply_multiple_operators(*ind, *exp_instance, operator_functions);
+
+                optimised_cost = ind->upper_cost;
+                evals_after = exp_instance->get_evals();
+
+                evals_used_per_operation.push_back(evals_after - evals_prev);
+                cost_improvement_per_operation.push_back((original_cost - optimised_cost) / original_cost);
+            }
+
+            Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
+            cout << "evals used when using the operator for individuals: " << endl;
+            cout << "Mean " << evals_indicators.avg << "\t \tStd Dev " << evals_indicators.std << endl;
+            cout << "Min: " << evals_indicators.min << "\t " << endl;
+            cout << "Max: " << evals_indicators.max << "\t " << endl;
+
+            Indicators cost_improvement_indicators = StatsInterface::calculate_statistical_indicators(cost_improvement_per_operation);
+            cout << "cost reduction percentage: " << endl;
+            cout << "Mean " << cost_improvement_indicators.avg << "\t \tStd Dev " << cost_improvement_indicators.std << endl;
+            cout << "Min: " << cost_improvement_indicators.min << "\t " << endl;
+            cout << "Max: " << cost_improvement_indicators.max << "\t " << endl;
+
+            delete exp_instance;
+        }
+        cout << endl << endl;
+    }
+
+    EXPECT_TRUE(true);
 }

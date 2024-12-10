@@ -259,6 +259,13 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
 /*                    Local search Operators                    */
 /****************************************************************/
 
+void apply_multiple_operators(Individual& individual, Case& instance,
+                              const vector<std::function<void(Individual&, Case&)>>& operators) {
+    for (const auto& op : operators) {
+        op(individual, instance);  // Apply each operator sequentially
+    }
+}
+
 void two_opt_for_single_route(int* route, int length, double& cost, Case& instance) {
     if (length < 5) return;
 
