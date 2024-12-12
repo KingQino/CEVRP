@@ -1081,7 +1081,7 @@ TEST_F(UtilsTest, RefineLimitedMemory) {
 }
 
 TEST_F(UtilsTest, ComparisonLocalSearchOperators_One) {
-//    vector<string> file_names = {"E-n22-k4.evrp", "X-n214-k11.evrp", "X-n1001-k43.evrp"};
+//    vector<string> file_names = {"X-n749-k98.evrp"};
     vector<string> file_names = {"E-n22-k4.evrp", "E-n23-k3.evrp", "E-n30-k3.evrp", "E-n33-k4.evrp", "E-n51-k5.evrp", "E-n76-k7.evrp",
                                  "E-n101-k8.evrp", "X-n143-k7.evrp", "X-n214-k11.evrp", "X-n351-k40.evrp", "X-n459-k26.evrp",
                                  "X-n573-k30.evrp", "X-n685-k75.evrp", "X-n749-k98.evrp", "X-n819-k171.evrp", "X-n916-k207.evrp",
@@ -1136,6 +1136,8 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_One) {
                 evals_used_per_operation.push_back(evals_after - evals_prev);
                 cost_improvement_per_operation.push_back((original_cost - optimised_cost) / original_cost);
             }
+
+            population.clear();
 
             Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
             cout << "evals used when using the operator for individuals: " << endl;
@@ -1229,6 +1231,8 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_Two) {
                 cost_improvement_per_operation.push_back((original_cost - optimised_cost) / original_cost);
             }
 
+            population.clear();
+
             Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
             cout << "evals used when using the operator for individuals: " << endl;
             cout << "Mean " << evals_indicators.avg << "\t \tStd Dev " << evals_indicators.std << endl;
@@ -1319,6 +1323,8 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_Three) {
                 evals_used_per_operation.push_back(evals_after - evals_prev);
                 cost_improvement_per_operation.push_back((original_cost - optimised_cost) / original_cost);
             }
+
+            population.clear();
 
             Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
             cout << "evals used when using the operator for individuals: " << endl;
