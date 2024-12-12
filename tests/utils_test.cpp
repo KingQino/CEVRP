@@ -1138,6 +1138,7 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_One) {
             }
 
             population.clear();
+            population.shrink_to_fit();
 
             Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
             cout << "evals used when using the operator for individuals: " << endl;
@@ -1232,6 +1233,7 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_Two) {
             }
 
             population.clear();
+            population.shrink_to_fit();
 
             Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
             cout << "evals used when using the operator for individuals: " << endl;
@@ -1325,6 +1327,7 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_Three) {
             }
 
             population.clear();
+            population.shrink_to_fit();
 
             Indicators evals_indicators = StatsInterface::calculate_statistical_indicators(evals_used_per_operation);
             cout << "evals used when using the operator for individuals: " << endl;
