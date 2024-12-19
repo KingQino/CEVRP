@@ -280,6 +280,39 @@ void two_opt_for_single_route(int* route, int length, double& cost, Case& instan
     }
 }
 
+void two_opt_for_single_route_exhaustive(int* route, int length, double& cost, Case& instance) {
+    if (length < 5) return;
+    bool improved = true;
+
+    while (improved) {
+        improved = false;
+
+        for (size_t i = 1; i < length - 2; ++i) {
+            for (size_t j = i + 1; j < length - 1; ++j) {
+                // Calculate the cost difference between the old route and the new route obtained by swapping edges
+                double old_cost = instance.get_distance(route[i - 1], route[i]) +
+                                  instance.get_distance(route[j], route[j + 1]);
+
+                double new_cost = instance.get_distance(route[i - 1], route[j]) +
+                                  instance.get_distance(route[i], route[j + 1]);
+
+                if (new_cost < old_cost) {
+                    // The cost variation should be considered
+                    reverse(route + i, route + j + 1);
+                    improved = true;
+                    cost += new_cost - old_cost;
+                }
+            }
+        }
+    }
+}
+
+void two_opt_for_individual_exhaustive(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; ++i) {
+        two_opt_for_single_route_exhaustive(individual.routes[i],  individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
+}
+
 bool contains(const int* array, int size, int element) {
     for (int i = 0; i < size; i++) {
         if (array[i] == element) {
@@ -611,7 +644,7 @@ bool two_opt_move_inter_route_for_individual(Individual& individual, Case& insta
 }
 
 // Jia Ya-Hui, et al.
-bool two_opt_star_for_individual(Individual& individual, Case& instance) {
+bool two_opt_star_for_individual_exhaustive(Individual& individual, Case& instance) {
     if (individual.num_routes == 1) {
         return false;
     }
@@ -788,6 +821,50 @@ bool node_shift(int* route, int length, double& cost, Case& instance) {
     return true;
 }
 
+bool node_shift_exhaustive(int* route, int length, double& cost, Case& instance) {
+    if (length <= 4) return false;
+    double min_change = 0;
+    bool flag = false;
+    do
+    {
+        min_change = 0;
+        int mini = 0, minj = 0;
+        for (int i = 1; i < length - 1; i++) {
+            for (int j = 1; j < length - 1; j++) {
+                if (i < j) {
+                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j], route[j + 1]);
+                    double xx2 = instance.get_distance(route[i - 1], route[i + 1]) + instance.get_distance(route[j], route[i]) + instance.get_distance(route[i], route[j + 1]);
+                    double change = xx1 - xx2;
+                    if (fabs(change) < 0.00000001) change = 0;
+                    if (min_change < change) {
+                        min_change = change;
+                        mini = i;
+                        minj = j;
+                        flag = true;
+                    }
+                }
+                else if (i > j) {
+                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j - 1], route[j]);
+                    double xx2 = instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j]) + instance.get_distance(route[i - 1], route[i + 1]);
+                    double change = xx1 - xx2;
+                    if (fabs(change) < 0.00000001) change = 0;
+                    if (min_change < change) {
+                        min_change = change;
+                        mini = i;
+                        minj = j;
+                        flag = true;
+                    }
+                }
+            }
+        }
+        if (min_change > 0) {
+            moveItoJ(route, mini, minj);
+            cost -= min_change;
+        }
+    } while (min_change > 0);
+    return flag;
+}
+
 bool node_shift_acceleration(int* route, int length, double& cost, Case& instance) {
     if (length <= 4) return false;
 
@@ -843,6 +920,12 @@ void moveItoJ(int* route, int a, int b) {
 void one_point_move_intra_route_for_individual(Individual& individual, Case& instance) {
     for (int i = 0; i < individual.num_routes; i++) {
         node_shift(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
+}
+
+void one_point_move_intra_route_for_individual_exhaustive(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; i++) {
+        node_shift_exhaustive(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
     }
 }
 
