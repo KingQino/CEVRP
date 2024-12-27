@@ -436,6 +436,55 @@ bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int
     return updated;
 }
 
+bool two_opt_inter_for_individual(Individual& individual, Case& instance) {
+    if (individual.num_routes == 1) return false;
+
+    bool flag = false;
+
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
+    while (!route_pairs.empty()) {
+        auto [r1, r2] = *route_pairs.begin();
+        route_pairs.erase(route_pairs.begin());
+
+        bool updated = two_opt_star_between_two_routes(individual.routes[r1], individual.routes[r2],
+                                                       individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
+                                                       individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2],
+                                                       individual.upper_cost, individual.node_cap, instance);
+
+        // update route pairs
+        if (updated) {
+            flag = true;
+            update_route_pairs(route_pairs, r1, r2);
+        }
+
+        // remove empty routes
+        if (individual.demand_sum_per_route[r1] == 0) {
+            int* tmp = individual.routes[r1];
+            individual.routes[r1] = individual.routes[individual.num_routes - 1];
+            individual.routes[individual.num_routes - 1] = tmp;
+            individual.demand_sum_per_route[r1] = individual.demand_sum_per_route[individual.num_routes - 1];
+            individual.num_nodes_per_route[r1] = individual.num_nodes_per_route[individual.num_routes - 1];
+            individual.num_routes--;
+            for (int i = 0; i < individual.num_routes; i++) {
+                route_pairs.erase({i, individual.num_routes});
+            }
+        }
+        if (individual.demand_sum_per_route[r2] == 0) {
+            int* tmp = individual.routes[r2];
+            individual.routes[r2] = individual.routes[individual.num_routes - 1];
+            individual.routes[individual.num_routes - 1] = tmp;
+            individual.demand_sum_per_route[r2] = individual.demand_sum_per_route[individual.num_routes - 1];
+            individual.num_nodes_per_route[r2] = individual.num_nodes_per_route[individual.num_routes - 1];
+            individual.num_routes--;
+            for (int i = 0; i < individual.num_routes; i++) {
+                route_pairs.erase({i, individual.num_routes});
+            }
+        }
+    }
+
+    return flag;
+}
+
 bool two_opt_star_between_two_routes_acceleration(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, int node_cap, Case& instance) {
     if (length1 < 3 || length2 < 3) return false;
 
@@ -573,56 +622,6 @@ bool two_opt_move_inter_route_for_individual_acceleration(Individual& individual
     }
 
     individual.cleanup(); // TODO: check if this is necessary
-    return flag;
-}
-
-bool two_opt_move_inter_route_for_individual(Individual& individual, Case& instance) {
-    if (individual.num_routes == 1) return false;
-
-    bool flag = false;
-
-    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
-    while (!route_pairs.empty()) {
-        auto [r1, r2] = *route_pairs.begin();
-        route_pairs.erase(route_pairs.begin());
-
-        bool updated = two_opt_star_between_two_routes(individual.routes[r1], individual.routes[r2],
-                                                  individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
-                                                  individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2],
-                                                  individual.upper_cost, individual.node_cap, instance);
-
-        // update route pairs
-        if (updated) {
-            flag = true;
-            update_route_pairs(route_pairs, r1, r2);
-        }
-
-        // remove empty routes
-        if (individual.demand_sum_per_route[r1] == 0) {
-            int* tmp = individual.routes[r1];
-            individual.routes[r1] = individual.routes[individual.num_routes - 1];
-            individual.routes[individual.num_routes - 1] = tmp;
-            individual.demand_sum_per_route[r1] = individual.demand_sum_per_route[individual.num_routes - 1];
-            individual.num_nodes_per_route[r1] = individual.num_nodes_per_route[individual.num_routes - 1];
-            individual.num_routes--;
-            for (int i = 0; i < individual.num_routes; i++) {
-                route_pairs.erase({i, individual.num_routes});
-            }
-        }
-        if (individual.demand_sum_per_route[r2] == 0) {
-            int* tmp = individual.routes[r2];
-            individual.routes[r2] = individual.routes[individual.num_routes - 1];
-            individual.routes[individual.num_routes - 1] = tmp;
-            individual.demand_sum_per_route[r2] = individual.demand_sum_per_route[individual.num_routes - 1];
-            individual.num_nodes_per_route[r2] = individual.num_nodes_per_route[individual.num_routes - 1];
-            individual.num_routes--;
-            for (int i = 0; i < individual.num_routes; i++) {
-                route_pairs.erase({i, individual.num_routes});
-            }
-        }
-    }
-
-//    individual.cleanup(); // TODO: check if this is necessary
     return flag;
 }
 

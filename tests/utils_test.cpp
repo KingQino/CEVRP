@@ -192,7 +192,7 @@ TEST_F(UtilsTest, TwoOptStarForIndividual) {
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
 
     double fit_prev = ind->upper_cost;
-    bool updated = two_opt_move_inter_route_for_individual(*ind, *instance);
+    bool updated = two_opt_inter_for_individual(*ind, *instance);
     double fit_cur = ind->upper_cost;
 
     EXPECT_LT(fit_cur, fit_prev);
