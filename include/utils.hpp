@@ -64,7 +64,7 @@ void moveItoJ(int* route, int a, int b);
 bool contains(const int* array, int size, int element);
 // operators
 void two_opt_for_single_route(int* route, int length, double& cost, Case& instance);
-void two_opt_for_individual(Individual& individual, Case& instance); // two-arcs exchange, intra-route
+void two_opt_intra_for_individual(Individual& individual, Case& instance); // two-arcs exchange, intra-route
 bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, int node_cap, Case& instance);
 bool two_opt_move_inter_route_for_individual(Individual& individual, Case& instance); // two-arcs exchange, inter-route
 bool node_shift(int* route, int length, double& cost, Case& instance);
