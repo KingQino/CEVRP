@@ -67,8 +67,9 @@ void two_opt_for_single_route(int* route, int length, double& cost, Case& instan
 void two_opt_intra_for_individual(Individual& individual, Case& instance); // two-arcs exchange, intra-route
 bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, int node_cap, Case& instance);
 bool two_opt_inter_for_individual(Individual& individual, Case& instance); // two-arcs exchange, inter-route
-bool node_shift(int* route, int length, double& cost, Case& instance);
-void one_point_move_intra_route_for_individual(Individual& individual, Case& instance); // three-arcs exchange, intra-route (One-point move intra-route)
+void node_relocation_for_single_route(int* route, int length, double& cost, Case& instance);
+void node_relocation_intra_for_individual(Individual& individual, Case& instance); // two-arcs exchange, intra-route
+
 bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, Case& instance);
 bool one_point_move_inter_route_for_individual(Individual& individual, Case& instance); // three-arcs exchange, inter-route (One-point move inter-route)
 void two_nodes_swap_for_single_route(int* route, int length, double& cost, Case& instance);

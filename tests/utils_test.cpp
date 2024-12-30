@@ -131,7 +131,7 @@ TEST_F(UtilsTest, TwoOptIntraForIndividual) {
             {0, 21, 19, 17, 20, 0},
             {0, 14, 16, 12, 15, 18, 0}
     };
-    vector<int> demand_sum_per_route = {6000, 5500, 5900, 5100};
+    vector<int> demand_sum_per_route = {5700, 5300, 6000, 5500};
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, 485.60155200568835, demand_sum_per_route);
 
     two_opt_intra_for_individual(*ind, *instance);
@@ -180,8 +180,7 @@ TEST_F(UtilsTest, TwoOptStarBetweenTwoRoutes) {
     delete[] route2;
 }
 
-TEST_F(UtilsTest, TwoOptStarForIndividual) {
-//    two_opt_move_inter_route_for_individual
+TEST_F(UtilsTest, TwoOptInterForIndividual) {
     vector<vector<int>> routes = {
             {0, 9, 7, 5, 2, 1, 6, 8, 0},
             {0, 10, 3, 4, 11, 13, 0},
@@ -196,10 +195,11 @@ TEST_F(UtilsTest, TwoOptStarForIndividual) {
     double fit_cur = ind->upper_cost;
 
     EXPECT_LT(fit_cur, fit_prev);
+    EXPECT_DOUBLE_EQ(fit_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
     EXPECT_TRUE(updated);
 }
 
-TEST_F(UtilsTest, OnePointMoveIntraRouteForIndividual) {
+TEST_F(UtilsTest, NodeRelocationIntraForIndividual) {
     vector<vector<int>> routes = {
             {0, 2, 1, 5, 7, 6, 9, 0},
             {0, 8, 3, 4, 11, 10, 13, 0},
@@ -209,12 +209,12 @@ TEST_F(UtilsTest, OnePointMoveIntraRouteForIndividual) {
     vector<int> demand_sum_per_route = {5600, 5400, 6000, 5500};
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
 
-    double fit_prev = ind->upper_cost;
-    one_point_move_intra_route_for_individual(*ind, *instance);
-    double fit_cur = ind->upper_cost;
+    double cost_prev = ind->upper_cost;
+    node_relocation_intra_for_individual(*ind, *instance);
+    double cost_cur = ind->upper_cost;
 
-    EXPECT_LT(fit_cur, fit_prev);
-    EXPECT_DOUBLE_EQ(fit_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
+    EXPECT_LT(cost_cur, cost_prev);
+    EXPECT_DOUBLE_EQ(cost_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
 }
 
 TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {

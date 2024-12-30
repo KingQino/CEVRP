@@ -276,9 +276,9 @@ void two_opt_for_single_route(int* route, int length, double& cost, Case& instan
                 double original_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[j], route[j + 1]);
                 double modified_cost = instance.get_distance(route[i - 1], route[j]) + instance.get_distance(route[i], route[j + 1]);
 
-                double change = modified_cost - original_cost; // if the modified cost is smaller, the change is negative.
+                double change = original_cost - modified_cost; // positive represents the cost reduction
                 if (fabs(change) < 1e-8) change = 0;
-                if (min_change > change) {
+                if (min_change < change) {
                     min_change = change;
                     min_i = i;
                     min_j = j;
@@ -286,10 +286,10 @@ void two_opt_for_single_route(int* route, int length, double& cost, Case& instan
             }
         }
 
-        if (min_change < 0) {
+        if (min_change > 0) {
             // The cost variation should be considered
             reverse(route + min_i, route + min_j + 1);
-            cost += min_change;
+            cost -= min_change;
 
             improved = true;
         }
@@ -625,30 +625,54 @@ bool two_opt_move_inter_route_for_individual_acceleration(Individual& individual
     return flag;
 }
 
-bool node_shift(int* route, int length, double& cost, Case& instance) {
-    if (length <= 4) return false;
+void node_relocation_for_single_route(int* route, int length, double& cost, Case& instance) {
+    if (length <= 4) return;
+    bool improved = true;
+    double min_change;
 
-    double old_cost, new_cost;
-    for (int i = 1; i < length - 1; i++) {
-        for (int j = 1; j < length - 1; j++) {
-            if (i == j) continue;
+    while (improved) {
 
-            if (i < j) {
-                old_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j], route[j + 1]);
-                new_cost = instance.get_distance(route[i - 1], route[i + 1]) + instance.get_distance(route[j], route[i]) + instance.get_distance(route[i], route[j + 1]);
-            } else {
-                old_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j - 1], route[j]);
-                new_cost = instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j]) + instance.get_distance(route[i - 1], route[i + 1]);
+        improved = false;
+        min_change = 0.0;
+        int min_i = 0, min_j = 0;
+
+        double original_cost, modified_cost;
+        for (int i = 1; i < length - 1; i++) {
+            for (int j = 1; j < length - 1; j++) {
+                if (i == j) continue;
+
+                if (i < j) {
+                    original_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j], route[j + 1]);
+                    modified_cost = instance.get_distance(route[i - 1], route[i + 1]) + instance.get_distance(route[j], route[i]) + instance.get_distance(route[i], route[j + 1]);
+                } else {
+                    original_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j - 1], route[j]);
+                    modified_cost = instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j]) + instance.get_distance(route[i - 1], route[i + 1]);
+                }
+
+                double change = original_cost - modified_cost;
+                if (fabs(change) < 1e-8) change = 0;
+                if (min_change < change) {
+                    min_change = change;
+                    min_i = i;
+                    min_j = j;
+                }
             }
+        }
 
-            if (new_cost < old_cost) {
-                moveItoJ(route, i, j);
-                cost -= (old_cost - new_cost);
-            }
+        if (min_change > 0) {
+            moveItoJ(route, min_i, min_j);
+            cost -= min_change;
+
+            improved = true;
         }
     }
 
-    return true;
+}
+
+void node_relocation_intra_for_individual(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; i++) {
+        node_relocation_for_single_route(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
 }
 
 bool node_shift_acceleration(int* route, int length, double& cost, Case& instance) {
@@ -700,12 +724,6 @@ void moveItoJ(int* route, int a, int b) {
             route[i] = route[i - 1];
         }
         route[b] = x;
-    }
-}
-
-void one_point_move_intra_route_for_individual(Individual& individual, Case& instance) {
-    for (int i = 0; i < individual.num_routes; i++) {
-        node_shift(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
     }
 }
 

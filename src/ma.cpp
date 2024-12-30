@@ -128,7 +128,7 @@ void Ma::run_heuristic() {
         // upper-level optimisation
         two_opt_intra_for_individual(*ind, *instance);
         two_opt_inter_for_individual(*ind, *instance);
-        one_point_move_intra_route_for_individual(*ind, *instance);
+        node_relocation_intra_for_individual(*ind, *instance);
 
         // lower-level optimisation
         fix_one_solution(*ind, *instance);
