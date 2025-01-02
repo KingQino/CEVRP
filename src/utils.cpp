@@ -727,10 +727,7 @@ void moveItoJ(int* route, int a, int b) {
     }
 }
 
-
-// node shift between two routes, inter-route operator for One Point move (i.e., customer insertion)
-// Toth, Paolo, and Daniele Vigo. "The granular tabu search and its application to the vehicle-routing problem." Informs Journal on computing 15, no. 4 (2003): 333-346.
-bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, Case& instance) {
+bool node_relocation_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, Case& instance) {
     if (length1 < 3 || length2 < 3) return false;
 
     for (int i = 1; i < length1 - 1; i++) {
@@ -761,6 +758,59 @@ bool node_shift_between_two_routes(int* route1, int* route2, int& length1, int& 
     }
 
     return false;
+}
+
+// Toth, Paolo, and Daniele Vigo. "The granular tabu search and its application to the vehicle-routing problem." Informs Journal on computing 15, no. 4 (2003): 333-346.
+bool node_relocation_inter_for_individual(Individual& individual, Case& instance) {
+    if (individual.num_routes == 1) return false;
+
+    bool flag = false;
+
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
+    while (!route_pairs.empty()) {
+        auto[r1, r2] = *route_pairs.begin();
+        route_pairs.erase(route_pairs.begin());
+        bool updated = node_relocation_between_two_routes(individual.routes[r1], individual.routes[r2], individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
+                                                          individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2], individual.upper_cost, instance);
+
+        if (updated) {
+            flag = true;
+            update_route_pairs(route_pairs, r1, r2);
+        }
+
+        // remove empty routes
+        if (individual.demand_sum_per_route[r1] == 0) {
+            int* tmp = individual.routes[r1];
+            individual.routes[r1] = individual.routes[individual.num_routes - 1];
+            individual.routes[individual.num_routes - 1] = tmp;
+            individual.demand_sum_per_route[r1] = individual.demand_sum_per_route[individual.num_routes - 1];
+            individual.num_nodes_per_route[r1] = individual.num_nodes_per_route[individual.num_routes - 1];
+            individual.num_routes--;
+            for (int i = 0; i < individual.num_routes; i++) {
+                route_pairs.erase({i, individual.num_routes});
+            }
+        }
+        if (individual.demand_sum_per_route[r2] == 0) {
+            int* tmp = individual.routes[r2];
+            individual.routes[r2] = individual.routes[individual.num_routes - 1];
+            individual.routes[individual.num_routes - 1] = tmp;
+            individual.demand_sum_per_route[r2] = individual.demand_sum_per_route[individual.num_routes - 1];
+            individual.num_nodes_per_route[r2] = individual.num_nodes_per_route[individual.num_routes - 1];
+            individual.num_routes--;
+            for (int i = 0; i < individual.num_routes; i++) {
+                route_pairs.erase({i, individual.num_routes});
+            }
+        }
+
+    }
+
+    // update the variable "num_routes" and "route_cap" to remove the empty route
+    for (size_t i = individual.num_routes; i < individual.route_cap; ++i) {
+        individual.num_nodes_per_route[i] = 0;
+        individual.demand_sum_per_route[i] = 0;
+    }
+
+    return flag;
 }
 
 bool node_shift_between_two_routes_acceleration(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, Case& instance) {
@@ -817,46 +867,6 @@ bool one_point_move_inter_route_for_individual_acceleration(Individual& individu
                                                    individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
                                                    individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2],
                                                    individual.upper_cost, instance);
-    }
-
-    // iterate the variable "demand_sum_per_route" to remove the empty route, if the demand_sum_per_route is 0, then remove the route
-    for (int i = 0; i < individual.num_routes; i++) {
-        if (individual.demand_sum_per_route[i] == 0) {
-            for (int j = i; j < individual.num_routes - 1; j++) {
-                int* temp = individual.routes[j];
-                individual.routes[j] = individual.routes[j + 1];
-                individual.routes[j + 1] = temp;
-                individual.num_nodes_per_route[j] = individual.num_nodes_per_route[j + 1];
-                individual.demand_sum_per_route[j] = individual.demand_sum_per_route[j + 1];
-            }
-            individual.num_routes--;
-            i--;
-        }
-    }
-
-    // update the variable "num_routes" and "route_cap" to remove the empty route
-    for (size_t i = individual.num_routes; i < individual.route_cap; ++i) {
-        individual.num_nodes_per_route[i] = 0;
-        individual.demand_sum_per_route[i] = 0;
-    }
-
-    return true;
-}
-
-bool one_point_move_inter_route_for_individual(Individual& individual, Case& instance) {
-    if (individual.num_routes == 1) {
-        return false;
-    }
-
-    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
-
-    while (!route_pairs.empty())
-    {
-        int r1 = route_pairs.begin()->first;
-        int r2 = route_pairs.begin()->second;
-        route_pairs.erase(route_pairs.begin());
-        node_shift_between_two_routes(individual.routes[r1], individual.routes[r2], individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
-                                      individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2], individual.upper_cost, instance);
     }
 
     // iterate the variable "demand_sum_per_route" to remove the empty route, if the demand_sum_per_route is 0, then remove the route
