@@ -893,24 +893,101 @@ bool one_point_move_inter_route_for_individual_acceleration(Individual& individu
     return true;
 }
 
-// swap two nodes within a route
-void two_nodes_swap_for_single_route(int* route, int length, double& cost, Case& instance) {
-    // boundary check
-    if (length < 5) return;
+void node_exchange_for_single_route(int* route, int length, double& cost, Case& instance) {
+    if (length < 6) return;
+    bool improved = true;
+    double min_change;
 
     // adjacent nodes do not swap
-    for(int i = 1; i < length - 3; i++) {
-        for(int j = i + 2; j < length - 1; j++) {
-            double old_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1])
-                              + instance.get_distance(route[j - 1], route[j]) + instance.get_distance(route[j], route[j + 1]);
-            double new_cost = instance.get_distance(route[i - 1], route[j]) + instance.get_distance(route[j], route[i + 1])
-                              + instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j + 1]);
-            if (new_cost < old_cost) {
-                swap(route[i], route[j]);
-                cost -= (old_cost - new_cost);
+    while (improved) {
+
+        improved = false;
+        min_change = 0.0;
+        int min_i = 0, min_j = 0;
+
+        double original_cost, modified_cost;
+        for(int i = 1; i < length - 3; i++) {
+            for(int j = i + 2; j < length - 1; j++) {
+                original_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1])
+                        + instance.get_distance(route[j - 1], route[j]) + instance.get_distance(route[j], route[j + 1]);
+                modified_cost = instance.get_distance(route[i - 1], route[j]) + instance.get_distance(route[j], route[i + 1])
+                        + instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j + 1]);
+
+                double change = original_cost - modified_cost;
+                if (fabs(change) < 1e-8) change = 0;
+                if (min_change < change) {
+                    min_change = change;
+                    min_i = i;
+                    min_j = j;
+                }
+            }
+        }
+
+        if (min_change > 0) {
+            swap(route[min_i], route[min_j]);
+            cost -= min_change;
+
+            improved = true;
+        }
+    }
+
+}
+
+void node_exchange_intra_for_individual(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; i++) {
+        node_exchange_for_single_route(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
+}
+
+bool node_exchange_between_two_routes(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2, double& cost, Case& instance) {
+    if (length1 < 3 || length2 < 3) return false;
+
+    // vehicle capacity constraint check and fitness improvement check
+    for (int i = 1; i < length1 - 1; i++) {
+        for (int j = 1; j < length2 - 1; j++) {
+            int demand_I = instance.get_customer_demand_(route1[i]);
+            int demand_J = instance.get_customer_demand_(route2[j]);
+            if (loading1 - demand_I + demand_J <= instance.max_vehicle_capa_ && loading2 - demand_J + demand_I <= instance.max_vehicle_capa_) {
+                double original_cost = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1])
+                                  + instance.get_distance(route2[j - 1], route2[j]) + instance.get_distance(route2[j], route2[j + 1]);
+                double modified_cost = instance.get_distance(route1[i - 1], route2[j]) + instance.get_distance(route2[j], route1[i + 1])
+                                  + instance.get_distance(route2[j - 1], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
+                if (modified_cost < original_cost) {
+                    swap(route1[i], route2[j]);
+                    loading1 = loading1 - demand_I + demand_J;
+                    loading2 = loading2 - demand_J + demand_I;
+                    cost -= (original_cost - modified_cost);
+
+                    return true;
+                }
             }
         }
     }
+
+    return false;
+}
+
+bool node_exchange_inter_for_individual(Individual& individual, Case& instance) {
+    if (individual.num_routes == 1) return false;
+
+    bool flag = false;
+
+    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
+    while (!route_pairs.empty()) {
+        auto[r1, r2] = *route_pairs.begin();
+        route_pairs.erase(route_pairs.begin());
+        bool updated = node_exchange_between_two_routes(individual.routes[r1], individual.routes[r2],
+                                                       individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
+                                                       individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2],
+                                                       individual.upper_cost, instance);
+
+        if (updated) {
+            flag = true;
+            update_route_pairs(route_pairs, r1, r2);
+        }
+    }
+
+    return flag;
 }
 
 void two_nodes_swap_for_single_route_acceleration(int* route, int length, double& cost, Case& instance) {
@@ -936,40 +1013,6 @@ void two_nodes_swap_for_single_route_acceleration(int* route, int length, double
             }
         }
     }
-}
-
-void two_point_move_intra_route_for_individual(Individual& individual, Case& instance) {
-    for (int i = 0; i < individual.num_routes; i++) {
-        two_nodes_swap_for_single_route(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
-    }
-}
-
-// swap two nodes between two routes
-bool two_nodes_swap_between_two_routes(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2, double& cost, Case& instance) {
-    // boundary check
-    if (length1 < 3 || length2 < 3) return false;
-
-    // vehicle capacity constraint check and fitness improvement check
-    for (int i = 1; i < length1 - 1; i++) {
-        for (int j = 1; j < length2 - 1; j++) {
-            int demand_I = instance.get_customer_demand_(route1[i]);
-            int demand_J = instance.get_customer_demand_(route2[j]);
-            if (loading1 - demand_I + demand_J <= instance.max_vehicle_capa_ && loading2 - demand_J + demand_I <= instance.max_vehicle_capa_) {
-                double old_cost = instance.get_distance(route1[i - 1], route1[i]) + instance.get_distance(route1[i], route1[i + 1])
-                                 + instance.get_distance(route2[j - 1], route2[j]) + instance.get_distance(route2[j], route2[j + 1]);
-                double new_cost = instance.get_distance(route1[i - 1], route2[j]) + instance.get_distance(route2[j], route1[i + 1])
-                                 + instance.get_distance(route2[j - 1], route1[i]) + instance.get_distance(route1[i], route2[j + 1]);
-                if (new_cost < old_cost) {
-                    swap(route1[i], route2[j]);
-                    loading1 = loading1 - demand_I + demand_J;
-                    loading2 = loading2 - demand_J + demand_I;
-                    cost -= (old_cost - new_cost);
-                }
-            }
-        }
-    }
-
-    return true;
 }
 
 bool two_nodes_swap_between_two_routes_acceleration(int* route1, int* route2, int length1, int length2, int& loading1, int& loading2, double& cost, Case& instance) {
@@ -1001,25 +1044,6 @@ bool two_nodes_swap_between_two_routes_acceleration(int* route1, int* route2, in
                 }
             }
         }
-    }
-
-    return true;
-}
-
-bool two_point_move_inter_route_for_individual(Individual& individual, Case& instance) {
-    if (individual.num_routes == 1) {
-        return false;
-    }
-
-    unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
-
-    while (!route_pairs.empty())
-    {
-        int r1 = route_pairs.begin()->first;
-        int r2 = route_pairs.begin()->second;
-        route_pairs.erase(route_pairs.begin());
-        two_nodes_swap_between_two_routes(individual.routes[r1], individual.routes[r2], individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
-                                          individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2], individual.upper_cost, instance);
     }
 
     return true;

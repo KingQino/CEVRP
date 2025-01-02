@@ -318,31 +318,37 @@ TEST_F(UtilsTest, NodeRelocationInterForIndividual) {
     delete[] ground_truth_demand_sum_per_route;
 }
 
-TEST_F(UtilsTest, TwoPointMoveIntraRouteForIndividual) {
+TEST_F(UtilsTest, NodeExchangeForSingleRoute) {
     // expected to obtain a better route, and it is {0, 10, 8, 3, 4, 11, 13, 0}
     int* route = new int[22]{0,3,8,13,4,11,10,0};
     int length = 8;
     double cost = instance->compute_total_distance({0,3,8,13,4,11,10,0});
     double cost_prev = cost;
 
-    two_nodes_swap_for_single_route(route, length, cost, *instance);
+    node_exchange_for_single_route(route, length, cost, *instance);
+
+    double ground_truth_cost = instance->compute_total_distance(route, length);
 
     EXPECT_LT(cost, cost_prev);
+    EXPECT_DOUBLE_EQ(cost, ground_truth_cost);
 
     delete[] route;
-
-
-    double fit_prev = individual->upper_cost;
-    two_point_move_intra_route_for_individual(*individual, *instance);
-    double fit_cur = individual->upper_cost;
-
-    double fit_eval = instance->compute_total_distance(individual->routes, individual->num_routes, individual->num_nodes_per_route);
-
-    EXPECT_LT(fit_cur, fit_prev);
-    EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
 }
 
-TEST_F(UtilsTest, TwoNodesSwapBetweenTwoRoutes) {
+TEST_F(UtilsTest, NodeExchangeIntraForIndividual) {
+    unique_ptr<Individual> ind = make_unique<Individual>(*individual);
+
+    double cost_prev = ind->upper_cost;
+    node_exchange_intra_for_individual(*ind, *instance);
+    double cost_cur = ind->upper_cost;
+
+    double ground_truth_cost = instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route);
+
+    EXPECT_LT(cost_cur, cost_prev);
+    EXPECT_DOUBLE_EQ(cost_cur, ground_truth_cost);
+}
+
+TEST_F(UtilsTest, NodeExchangeBetweenTwoRoutes) {
     int* route1 = new int[22]{0,8,3,4,11,13,6, 0};
     int* route2 = new int[22]{0,10, 1,2,5,7,9,0};
     int length1 = 8;
@@ -354,32 +360,40 @@ TEST_F(UtilsTest, TwoNodesSwapBetweenTwoRoutes) {
     int loading1_prev = loading1;
     int loading2_prev = loading2;
 
-    bool updated = two_nodes_swap_between_two_routes(route1, route2, length1, length2, loading1, loading2, fitv, *instance);
+    bool updated = node_exchange_between_two_routes(route1, route2, length1, length2, loading1, loading2, fitv, *instance);
+
+    double ground_truth_cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+
 
     EXPECT_TRUE(updated);
     EXPECT_EQ(route2[1], 6);
     EXPECT_LT(fitv, fit_prev);
     EXPECT_NE(loading1, loading1_prev);
     EXPECT_EQ(loading1_prev + loading2_prev, loading1 + loading2);
+    EXPECT_DOUBLE_EQ(fitv, ground_truth_cost);
 
     delete[] route1;
     delete[] route2;
 }
 
-TEST_F(UtilsTest, TwoPointMoveInterRouteForIndividual) {
-    double fit_prev = individual->upper_cost;
-    two_point_move_inter_route_for_individual(*individual, *instance);
-    double fit_cur = individual->upper_cost;
+TEST_F(UtilsTest, NodeExchangeInterForIndividual) {
+    unique_ptr<Individual> ind = make_unique<Individual>(*individual);
 
-    double fit_eval = instance->compute_total_distance(individual->routes, individual->num_routes, individual->num_nodes_per_route);
-    int loadingSum = 0;
-    for (int i = 0; i < individual->num_routes; ++i) {
-        loadingSum += individual->demand_sum_per_route[i];
+    double cost_prev = ind->upper_cost;
+    node_exchange_inter_for_individual(*ind, *instance);
+    double cost_cur = ind->upper_cost;
+
+    double ground_truth_cost = instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route);
+
+
+    int loading_sum = 0;
+    for (int i = 0; i < ind->num_routes; ++i) {
+        loading_sum += ind->demand_sum_per_route[i];
     }
 
-    EXPECT_LT(fit_cur, fit_prev);
-    EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
-    EXPECT_EQ(loadingSum, 22'500);
+    EXPECT_LT(cost_cur, cost_prev);
+    EXPECT_EQ(loading_sum, 22'500);
+    EXPECT_DOUBLE_EQ(cost_cur, ground_truth_cost);
 }
 
 TEST_F(UtilsTest, FixOneSolution) {
