@@ -69,7 +69,7 @@ void Ma::run() {
             break;
     }
 
-    global_best = std::move(refine_limited_memory(*global_best, *instance, global_upper_best->upper_cost, refine_threshold_ratio));
+//    global_best = std::move(refine_limited_memory(*global_best, *instance, global_upper_best->upper_cost, refine_threshold_ratio));
 
     if (enable_logging) {
         close_log_for_evolution();  // Close log if logging is enabled
