@@ -69,7 +69,7 @@ void Ma::run() {
             break;
     }
 
-    global_best = std::move(refine_limited_memory(*global_best, *instance, global_upper_best->upper_cost, refine_threshold_ratio));
+//    global_best = std::move(refine_limited_memory(*global_best, *instance, global_upper_best->upper_cost, refine_threshold_ratio));
 
     if (enable_logging) {
         close_log_for_evolution();  // Close log if logging is enabled
@@ -126,9 +126,9 @@ void Ma::run_heuristic() {
 
     for(auto& ind : population) {
         // upper-level optimisation
-        two_opt_for_individual(*ind, *instance);
-        two_opt_move_inter_route_for_individual(*ind, *instance);
-        one_point_move_intra_route_for_individual(*ind, *instance);
+        two_opt_intra_for_individual(*ind, *instance);
+        two_opt_inter_for_individual(*ind, *instance);
+        node_relocation_intra_for_individual(*ind, *instance);
 
         // lower-level optimisation
         fix_one_solution(*ind, *instance);
