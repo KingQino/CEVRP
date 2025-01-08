@@ -79,3 +79,28 @@ TEST_F(MaTest, Run) {
     EXPECT_EQ(ma->global_best->num_routes, 4);
     EXPECT_NEAR(ma->global_best->lower_cost, 384.678, 0.0001);
 }
+
+TEST_F(MaTest, InitIndByChromosome) {
+    vector<vector<int>> routes = {
+            {0,17,20,18,15,12,0},
+            {0,16,19,21,14,0},
+            {0,10,1,2,5,7,9,0},
+            {0,8,6,3,4,11,13,0}
+    };
+    double upper_cost = instance->compute_total_distance(routes);
+    vector<int> demand_sum_per_route = instance->compute_demand_sum_per_route(routes);
+    unique_ptr<Individual> ind_constructor = make_unique<Individual>(ma->route_cap, ma->node_cap, routes, upper_cost, demand_sum_per_route);
+
+
+    vector<int> chromosome = {17,20,18,15,12,16,19,21,14,10,1,2,5,7,9,8,6,3,4,11,13};
+    unique_ptr<Individual> ind_init_by_chromosome = make_unique<Individual>(ma->route_cap, ma->node_cap);
+    ma->init_ind_by_chromosome(*ind_init_by_chromosome, chromosome);
+
+
+    // check the diversity-related parameters
+    EXPECT_EQ(ind_constructor->successors, ind_init_by_chromosome->successors);
+    EXPECT_TRUE(std::equal(
+            ind_constructor->predecessors.begin() + 1, ind_constructor->predecessors.end(),
+            ind_init_by_chromosome->predecessors.begin() + 1, ind_init_by_chromosome->predecessors.end()
+    ));
+}

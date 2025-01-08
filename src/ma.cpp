@@ -270,8 +270,22 @@ void Ma::init_ind_by_chromosome(Individual &ind, const vector<int> &chromosome) 
 
         int customer_pos = 1;
         for (auto it = chromosome.begin() + i; it < chromosome.begin() + j; ++it) {
-            ind.routes[route_index][customer_pos++] = *it;
+            ind.routes[route_index][customer_pos] = *it;
+
+            // Update predecessors and successors
+            if (customer_pos == 1) {
+                ind.predecessors[*it] = instance->depot_; // First customer of the route points to the depot
+            } else {
+                int prev_node = ind.routes[route_index][customer_pos - 1];
+                ind.predecessors[*it] = prev_node;
+                ind.successors[prev_node] = *it;
+            }
+            customer_pos++;
         }
+        // Set depot as successor of the last node in the route
+        int last_node = ind.routes[route_index][customer_pos - 1];
+        ind.successors[last_node] = instance->depot_; // Last customer points back to the depot
+
         ind.num_nodes_per_route[route_index] = customer_pos + 1;
 
         route_index++; // Move to the next route
@@ -465,4 +479,24 @@ vector<int> Ma::get_immigrant_chromosome(std::default_random_engine& rng) const 
     std::shuffle(immigrant.begin(), immigrant.end(), rng);
 
     return std::move(immigrant);
+}
+
+double Ma::broken_pairs_distance(const Individual& ind1, const Individual& ind2) {
+    int differences = 0;
+    for (int j = 1; j <= instance->num_customer_; j++) {
+        if (ind1.successors[j] != ind2.successors[j] && ind1.successors[j] != ind2.predecessors[j]) differences++;
+        if (ind1.predecessors[j] == 0 && ind2.predecessors[j] != 0 && ind2.successors[j] != 0) differences++;
+    }
+    return (double)differences / (double)instance->num_customer_;
+}
+
+double Ma::average_broken_pairs_distance_closest(const Individual& ind, int nb_closest) {
+    double result = 0.0;
+    int max_size = std::min<int>(nb_closest, ind.proximate_individuals.size());
+    auto it = ind.proximate_individuals.begin();
+    for (int i = 0; i < max_size; i++) {
+        result += it->first;
+        ++it;
+    }
+    return result / (double)max_size;
 }

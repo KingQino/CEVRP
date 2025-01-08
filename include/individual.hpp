@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <set>
 
 using namespace std;
 
@@ -31,6 +32,10 @@ public:
     int*  lower_num_nodes_per_route;
     double lower_cost;
 
+    // used for calculate the diversity
+    std::vector<int> successors;  // for each node, the successor in the solution (can be the depot 0)
+    std::vector<int> predecessors;  // for each node, the predecessor in the solution (can be the depot 0)
+    std::multiset<std::pair<double, Individual*>> proximate_individuals; // the other individuals in the population, ordered by increasing proximity (the set container follows a natural ordering based on the first value of the pair)
 
     Individual(const Individual  &ind);
     Individual(int route_cap, int node_cap);

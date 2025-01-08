@@ -48,6 +48,9 @@ public:
     void cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine& rng);
     void mut_shuffle_indexes(vector<int>& chromosome, double independent_prob, std::default_random_engine& rng);
 
+    double broken_pairs_distance(const Individual& ind1, const Individual& ind2); // distance measure between two individuals, used for diversity calculations
+    double average_broken_pairs_distance_closest(const Individual& ind, int nb_closest); // returns the average broken pairs distance of this individual with the nbClosest individuals in the population
+
 
     Case* instance;
     vector<unique_ptr<Individual>> population;
