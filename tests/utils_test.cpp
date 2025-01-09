@@ -1096,12 +1096,12 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_One) {
 
     // Define local search operators
     vector<std::pair<string, std::function<void(Individual&, Case&)>>> local_search_operators = {
-            {"2-opt intra", two_opt_for_individual},
-            {"2-opt inter", two_opt_star_for_individual},
-            {"node shift intra", one_point_move_intra_route_for_individual},
-            {"node shift inter", one_point_move_inter_route_for_individual},
-            {"two nodes swap intra", two_point_move_intra_route_for_individual},
-            {"two nodes swap inter", two_point_move_inter_route_for_individual}
+            {"2-opt intra", two_opt_intra_for_individual},
+            {"2-opt inter", two_opt_inter_for_individual},
+            {"node shift intra", node_relocation_intra_for_individual},
+            {"node shift inter", node_relocation_inter_for_individual},
+            {"two nodes swap intra", node_exchange_intra_for_individual},
+            {"two nodes swap inter", node_exchange_inter_for_individual}
     };
 
     int num_individuals = 10'000;
@@ -1176,12 +1176,12 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_Two) {
 
     // Define local search operators
     vector<std::pair<string, std::function<void(Individual&, Case&)>>> local_search_operators = {
-            {"2-opt intra", two_opt_for_individual},
-            {"2-opt inter", two_opt_star_for_individual},
-            {"node shift intra", one_point_move_intra_route_for_individual},
-            {"node shift inter", one_point_move_inter_route_for_individual},
-            {"two nodes swap intra", two_point_move_intra_route_for_individual},
-            {"two nodes swap inter", two_point_move_inter_route_for_individual}
+            {"2-opt intra", two_opt_intra_for_individual},
+            {"2-opt inter", two_opt_inter_for_individual},
+            {"node shift intra", node_relocation_intra_for_individual},
+            {"node shift inter", node_relocation_inter_for_individual},
+            {"two nodes swap intra", node_exchange_intra_for_individual},
+            {"two nodes swap inter", node_exchange_inter_for_individual}
     };
 
     // Define sequences of operators
@@ -1270,12 +1270,12 @@ TEST_F(UtilsTest, ComparisonLocalSearchOperators_Three) {
 
     // Define local search operators
     vector<std::pair<string, std::function<void(Individual&, Case&)>>> local_search_operators = {
-            {"2-opt intra", two_opt_for_individual},
-            {"2-opt inter", two_opt_star_for_individual},
-            {"node shift intra", one_point_move_intra_route_for_individual},
-            {"node shift inter", one_point_move_inter_route_for_individual},
-            {"two nodes swap intra", two_point_move_intra_route_for_individual},
-            {"two nodes swap inter", two_point_move_inter_route_for_individual}
+            {"2-opt intra", two_opt_intra_for_individual},
+            {"2-opt inter", two_opt_inter_for_individual},
+            {"node shift intra", node_relocation_intra_for_individual},
+            {"node shift inter", node_relocation_inter_for_individual},
+            {"two nodes swap intra", node_exchange_intra_for_individual},
+            {"two nodes swap inter", node_exchange_inter_for_individual}
     };
 
     // Define sequences of operators
