@@ -163,7 +163,9 @@ void Ma::run_heuristic() {
     chromosomes.reserve(pop_size);
 
     // adaptive selection for crossover
-    diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
+    update_proximate_individuals();
+    diversity = calculate_diversity_by_broken_paris_distance(population, num_closest);
+//    diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
     if (diversity > 0.5 ) {
         // a value close to 1 indicates high diversity
         int cx_count_between_elites = int(0.45 * pop_size);
@@ -368,6 +370,16 @@ Individual* Ma::select_best_upper_individual_ptr(const vector<Individual*>& indi
     return *best_individual;
 }
 
+double Ma::calculate_diversity_by_broken_paris_distance(const vector<unique_ptr<Individual>>& individuals, int num_closest) {
+    double sum = 0.;
+    int size = static_cast<int>(individuals.size());
+    for (int i = 0; i < size; ++i) {
+        sum += average_broken_pairs_distance_closest(*individuals[i], num_closest);
+    }
+
+    return sum/(double)size;
+}
+
 double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values) {
     int N = static_cast<int>(fitness_values.size());
 
@@ -517,5 +529,42 @@ void Ma::update_proximate_individuals() {
             ind_i.proximate_individuals.insert({distance, &ind_j});
             ind_j.proximate_individuals.insert({distance, &ind_i});
         }
+    }
+}
+
+void Ma::update_biased_fitness() {
+    for (size_t i = 0; i < population.size(); ++i) {
+        auto& ind_i = *population[i];
+
+        for (size_t j = i + 1; j < population.size(); ++j) {
+            auto& ind_j = *population[j];
+
+            // Calculate the distance only once for the pair
+            double distance = broken_pairs_distance(ind_i, ind_j);
+
+            // Update both individuals' proximity multisets
+            ind_i.proximate_individuals.insert({distance, &ind_j});
+            ind_j.proximate_individuals.insert({distance, &ind_i});
+        }
+    }
+
+    std::sort(population.begin(), population.end(), [](const unique_ptr<Individual>& a, const unique_ptr<Individual>& b) {
+        return a->upper_cost < b->upper_cost;
+    });
+
+    // Ranking the individuals based on their diversity contribution (decreasing order of distance)
+    vector<pair<double, int>> div_ranking;
+    div_ranking.reserve(pop_size);
+    for (int i = 0 ; i < pop_size; i++) {
+        div_ranking.emplace_back(-Ma::average_broken_pairs_distance_closest(*population[i], num_closest),i);
+    }
+    std::sort(div_ranking.begin(), div_ranking.end()); // the value is negative, so the smaller the value, the larger the distance (i.e., the higher the diversity)
+
+    // Update the biased fitness values
+    for (int i = 0; i < pop_size; ++i) {
+        double normalized_div_ranking = (double)i / (double)(pop_size - 1); // ranking from 0 to 1 => 0 is the best
+        double normalized_obj_ranking = (double)div_ranking[i].second / (double)(pop_size - 1); // calculate the corresponding ranking of the individual in terms of objective value => 0 is the best
+
+        population[div_ranking[i].second]->biased_fitness = normalized_obj_ranking + (1.0 - (double)num_elite / (double)pop_size) * normalized_div_ranking;
     }
 }

@@ -160,7 +160,7 @@ TEST_F(MaTest, UpdateProximateIndividuals) {
     EXPECT_EQ(biased_fitness_ranking.size(), 100);
     EXPECT_LT(biased_fitness_ranking[0].first, biased_fitness_ranking[99].first);
 
-    // judge whether the duplicate individual is the population
+    // judge whether the duplicate individual is in the population
     int count = 0;
     for (int i = 0; i < ma->pop_size; ++i) {
         if (Ma::average_broken_pairs_distance_closest(*ma->population[i], 1) < 1e-8) {
