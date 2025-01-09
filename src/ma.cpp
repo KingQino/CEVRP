@@ -118,9 +118,6 @@ void Ma::initialize_heuristic() {
     }
     global_best = make_unique<Individual>(route_cap, node_cap);
     global_best->lower_cost = INFEASIBLE;
-
-    global_upper_best = make_unique<Individual>(route_cap, node_cap);
-    global_upper_best->upper_cost = INFEASIBLE;
 }
 
 void Ma::run_heuristic() {
@@ -136,6 +133,8 @@ void Ma::run_heuristic() {
         fix_one_solution(*ind, *instance);
     }
 
+    update_biased_fitness();
+
     vector<Individual*> population_raw_ptrs;
     population_raw_ptrs.reserve(population.size());
     for (const auto& individual : population) {
@@ -147,70 +146,28 @@ void Ma::run_heuristic() {
     if (global_best->lower_cost > iter_best->lower_cost) {
         global_best = make_unique<Individual>(*iter_best); // create a new copy of the iter best
     }
-    auto iter_upper_best = select_best_upper_individual_ptr(population_raw_ptrs);
-    if (global_upper_best->upper_cost > iter_upper_best->upper_cost) {
-        global_upper_best = make_unique<Individual>(*iter_upper_best); // create a new copy of the global upper best
-    }
-
-
-    vector<vector<int>> local_optimised_pool;
-    local_optimised_pool.reserve(pop_size);
-    for(auto& ind : population) {
-        local_optimised_pool.push_back(ind->get_chromosome());
-    }
 
     vector<vector<int>> chromosomes;
     chromosomes.reserve(pop_size);
 
-    // adaptive selection for crossover
-    update_proximate_individuals();
+    // binary tournament selection based on the biased fitness
     diversity = calculate_diversity_by_broken_paris_distance(population, num_closest);
-//    diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
-    if (diversity > 0.5 ) {
-        // a value close to 1 indicates high diversity
-        int cx_count_between_elites = int(0.45 * pop_size);
-        int cx_count_between_elite_and_immigrant = int(0.05 * pop_size);
-        for (int i = 0; i < cx_count_between_elites; ++i) {
-            vector<int> selected_indices = select_random(pop_size, 2, random_engine);
-            vector<int> elite1(local_optimised_pool[selected_indices[0]]);
-            vector<int> elite2(local_optimised_pool[selected_indices[1]]);
-
-            cx_partially_matched(elite1, elite2, random_engine);
-
-            chromosomes.push_back(std::move(elite1));
-            chromosomes.push_back(std::move(elite2));
-        }
-        for (int i = 0; i < cx_count_between_elite_and_immigrant; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
-
-            cx_partially_matched(elite, immigrant, random_engine);
-
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
-        }
-    } else {
-        // a value near 0 indicates low diversity
-        int cx_count = int(0.5 * pop_size);
-
-        for (int i = 0; i < cx_count; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
-
-            cx_partially_matched(elite, immigrant, random_engine);
-
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
+    for (int i = 0; i < pop_size; ++i) {
+        vector<int> selected_indices = select_random(pop_size, 2, random_engine);
+        int idx1 = selected_indices[0];
+        int idx2 = selected_indices[1];
+        if (population[idx1]->biased_fitness < population[idx2]->biased_fitness) {
+            chromosomes.push_back(population[idx1]->get_chromosome());
+        } else {
+            chromosomes.push_back(population[idx2]->get_chromosome());
         }
     }
 
-    // mutation
-    for (auto& chromosome : chromosomes) {
-        if (uniform_real_dist(random_engine) < mutation_prob) {
-            mut_shuffle_indexes(chromosome, mutation_ind_prob, random_engine);
-        }
+    int size = int(pop_size/2);
+    for (int i = 0; i < size; ++i) {
+        cx_partially_matched(chromosomes[i], chromosomes[i + size], random_engine);
+        mut_shuffle_indexes(chromosomes[i], mutation_ind_prob, random_engine);
+        mut_shuffle_indexes(chromosomes[i + size], mutation_ind_prob, random_engine);
     }
 
     // update the population
