@@ -26,6 +26,10 @@ Individual::Individual(const Individual& ind) {
     memcpy(this->lower_num_nodes_per_route, ind.lower_num_nodes_per_route, sizeof(int) * ind.route_cap);
     this->demand_sum_per_route = new int[ind.route_cap];
     memcpy(this->demand_sum_per_route, ind.demand_sum_per_route, sizeof(int) * ind.route_cap);
+
+    this->successors = ind.successors;
+    this->predecessors = ind.predecessors;
+    this->proximate_individuals = ind.proximate_individuals;
 }
 
 Individual::Individual(int route_cap, int node_cap) {
@@ -49,6 +53,9 @@ Individual::Individual(int route_cap, int node_cap) {
     memset(this->demand_sum_per_route, 0, sizeof(int) * route_cap);
     this->upper_cost = 0;
     this->lower_cost = 0;
+
+    this->successors = std::vector <int>(node_cap);
+    this->predecessors = std::vector <int>(node_cap);
 }
 
 Individual::Individual(int route_cap, int node_cap, const vector<vector<int>>& routes, double upper_cost, const vector<int>& demand_sum_per_route)
@@ -57,9 +64,16 @@ Individual::Individual(int route_cap, int node_cap, const vector<vector<int>>& r
     this->num_routes = static_cast<int>(routes.size());
     for (int i = 0; i < this->num_routes; ++i) {
         this->num_nodes_per_route[i] = static_cast<int>(routes[i].size());
+        this->predecessors[routes[i][0]] = 0;
         for (int j = 0; j < this->num_nodes_per_route[i]; ++j) {
             this->routes[i][j] = routes[i][j];
+
+            if (j > 0) {
+                this->predecessors[routes[i][j]] = routes[i][j - 1];
+                this->successors[routes[i][j - 1]] = routes[i][j];
+            }
         }
+        this->successors[routes[i][this->num_nodes_per_route[i] - 1]] = 0;
     }
     for (int i = 0; i < demand_sum_per_route.size(); ++i) {
         this->demand_sum_per_route[i] = demand_sum_per_route[i];
@@ -90,6 +104,10 @@ void Individual::reset() {
     this->num_routes = 0;
     this->upper_cost = 0;
     this->lower_cost = 0;
+
+    memset(this->successors.data(), 0, this->successors.size() * sizeof(int));
+    memset(this->predecessors.data(), 0, this->predecessors.size() * sizeof(int));
+    this->proximate_individuals.clear();
 }
 
 void Individual::cleanup() const {
@@ -152,7 +170,7 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual) {
     os << "\n";
 
     os << "Upper Routes: \n";
-    for (int i = 0; i < individual.route_cap; ++i) {
+    for (int i = 0; i < individual.num_routes; ++i) {
         os << "Route " << i + 1 << ": ";
         for (int j = 0; j < individual.node_cap; ++j) {
             os << individual.routes[i][j] << " ";
@@ -168,6 +186,18 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual) {
         }
         os << "\n";
     }
+
+    os << "Diversity: \n";
+    os << "Successors  : ";
+    for (int i = 0; i < individual.node_cap; ++i) {
+        os << individual.successors[i] << " ";
+    }
+    os << "\n";
+    os << "Predecessors: ";
+    for (int i = 0; i < individual.node_cap; ++i) {
+        os << individual.predecessors[i] << " ";
+    }
+    os << "\n";
 
     return os;
 }

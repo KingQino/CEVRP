@@ -88,8 +88,63 @@
    sh objective.sh
    ```
 
-   convergence curve - 
+   `objective.sh`
 
+   ```shell
+   #!/bin/bash
+   
+   output_file="a.txt"
+   > "$output_file" # Clear or create the output file
+   
+   # List of directories and their specific stats files in the desired order
+   declare -A stats_files=(
+       [E-n22-k4]="stats.E-n22-k4.evrp"
+       [E-n23-k3]="stats.E-n23-k3.evrp"
+       [E-n30-k3]="stats.E-n30-k3.evrp"
+       [E-n33-k4]="stats.E-n33-k4.evrp"
+       [E-n51-k5]="stats.E-n51-k5.evrp"
+       [E-n76-k7]="stats.E-n76-k7.evrp"
+       [E-n101-k8]="stats.E-n101-k8.evrp"
+       [X-n143-k7]="stats.X-n143-k7.evrp"
+       [X-n214-k11]="stats.X-n214-k11.evrp"
+       [X-n351-k40]="stats.X-n351-k40.evrp"
+       [X-n459-k26]="stats.X-n459-k26.evrp"
+       [X-n573-k30]="stats.X-n573-k30.evrp"
+       [X-n685-k75]="stats.X-n685-k75.evrp"
+       [X-n749-k98]="stats.X-n749-k98.evrp"
+       [X-n819-k171]="stats.X-n819-k171.evrp"
+       [X-n916-k207]="stats.X-n916-k207.evrp"
+       [X-n1001-k43]="stats.X-n1001-k43.evrp"
+   )
+   
+   # Process files in the given sequence
+   for dir in E-n22-k4 E-n23-k3 E-n30-k3 E-n33-k4 E-n51-k5 E-n76-k7 E-n101-k8 \
+              X-n143-k7 X-n214-k11 X-n351-k40 X-n459-k26 X-n573-k30 X-n685-k75 \
+              X-n749-k98 X-n819-k171 X-n916-k207 X-n1001-k43; do
+       file_path="$dir/${stats_files[$dir]}"
+       if [ -f "$file_path" ]; then
+           tail -n 3 "$file_path" >> "$output_file"
+       else
+           echo "File not found: $file_path" >&2
+       fi
+   done
+   
+   # Process the output file to ensure results follow the sequence
+   awk '
+   /Mean/ {
+       mean_value = $2;
+       std_dev_value = $NF;
+   }
+   /Min:/ {
+       min_value = $2;
+       print min_value;
+       print mean_value;
+       print std_dev_value;
+   }' "$output_file"
+   ```
+   
+   convergence curve - 
+   
    ```shell
    
    ```

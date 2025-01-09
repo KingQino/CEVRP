@@ -125,19 +125,19 @@ TEST_F(UtilsTest, RoutesConstructor) {
     EXPECT_NE(routes_z[0][1], 0);
 }
 
-TEST_F(UtilsTest, TwoOptForIndividual) {
+TEST_F(UtilsTest, TwoOptIntraForIndividual) {
     vector<vector<int>> routes = {
             {0, 2, 1, 5, 7, 6, 9, 8, 0},
             {0, 3, 4, 11, 10, 13, 0},
             {0, 21, 19, 17, 20, 0},
             {0, 14, 16, 12, 15, 18, 0}
     };
-    vector<int> demand_sum_per_route = {6000, 5500, 5900, 5100};
+    vector<int> demand_sum_per_route = {5700, 5300, 6000, 5500};
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, 485.60155200568835, demand_sum_per_route);
 
-    two_opt_for_individual(*ind, *instance);
+    two_opt_intra_for_individual(*ind, *instance);
 
-    EXPECT_DOUBLE_EQ(ind->upper_cost, 392.23351570689545);
+    EXPECT_DOUBLE_EQ(ind->upper_cost, 385.2853879430639);
 }
 
 TEST_F(UtilsTest, TwoOptStarBetweenTwoRoutes) {
@@ -181,8 +181,7 @@ TEST_F(UtilsTest, TwoOptStarBetweenTwoRoutes) {
     delete[] route2;
 }
 
-TEST_F(UtilsTest, TwoOptStarForIndividual) {
-//    two_opt_move_inter_route_for_individual
+TEST_F(UtilsTest, TwoOptInterForIndividual) {
     vector<vector<int>> routes = {
             {0, 9, 7, 5, 2, 1, 6, 8, 0},
             {0, 10, 3, 4, 11, 13, 0},
@@ -193,14 +192,15 @@ TEST_F(UtilsTest, TwoOptStarForIndividual) {
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
 
     double fit_prev = ind->upper_cost;
-    bool updated = two_opt_move_inter_route_for_individual(*ind, *instance);
+    bool updated = two_opt_inter_for_individual(*ind, *instance);
     double fit_cur = ind->upper_cost;
 
     EXPECT_LT(fit_cur, fit_prev);
+    EXPECT_DOUBLE_EQ(fit_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
     EXPECT_TRUE(updated);
 }
 
-TEST_F(UtilsTest, OnePointMoveIntraRouteForIndividual) {
+TEST_F(UtilsTest, NodeRelocationIntraForIndividual) {
     vector<vector<int>> routes = {
             {0, 2, 1, 5, 7, 6, 9, 0},
             {0, 8, 3, 4, 11, 10, 13, 0},
@@ -210,15 +210,15 @@ TEST_F(UtilsTest, OnePointMoveIntraRouteForIndividual) {
     vector<int> demand_sum_per_route = {5600, 5400, 6000, 5500};
     shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, instance->compute_total_distance(routes), demand_sum_per_route);
 
-    double fit_prev = ind->upper_cost;
-    one_point_move_intra_route_for_individual(*ind, *instance);
-    double fit_cur = ind->upper_cost;
+    double cost_prev = ind->upper_cost;
+    node_relocation_intra_for_individual(*ind, *instance);
+    double cost_cur = ind->upper_cost;
 
-    EXPECT_LT(fit_cur, fit_prev);
-    EXPECT_DOUBLE_EQ(fit_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
+    EXPECT_LT(cost_cur, cost_prev);
+    EXPECT_DOUBLE_EQ(cost_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
 }
 
-TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
+TEST_F(UtilsTest, NodeRelocationBetweenTwoRoutes) {
     // interesting node: 6, demand_ 400
     int* route1 = new int[22]{0,10,8,6,3, 4,11,13,0}; //5800
     int* route2 = new int[22]{0,1,2,5,7,9,0}; // 5200
@@ -228,26 +228,7 @@ TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
     int loading2 = 5200;
     double cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
 
-    node_shift_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, *instance);
-
-    // expect to obtain better routes, and they are {0,10,8,3,4,11,13,0} and {0,6,1,2,5,7,9,0}
-    // print route1 and route2
-//    for (int i = 0; i < length1; ++i) {
-//        cout << route1[i] << " ";
-//    }
-//    cout << endl;
-//    for (int i = 0; i < length2; ++i) {
-//        cout << route2[i] << " ";
-//    }
-//    cout << endl;
-//    // print length1 and length2
-//    cout << "Length: " << length1 << " " << length2 << endl;
-//    // check the loading
-//    cout << "Loading: " << loading1 << " " << loading2 << endl;
-//    // print the fitness value
-//    cout << "Fitness value: " << cost << endl;
-//    double cost_validation = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
-//    cout << "New Cost: " << cost_validation << endl;
+    node_relocation_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, *instance);
 
     EXPECT_EQ(route2[1], 10);
     EXPECT_EQ(length1, 8);
@@ -264,7 +245,7 @@ TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
     int loading4 = 5000;
     double cost_34 = instance->compute_total_distance(route3, length3) + instance->compute_total_distance(route4, length4);
 
-    node_shift_between_two_routes(route3, route4, length3, length4, loading3, loading4, cost_34, *instance);
+    node_relocation_between_two_routes(route3, route4, length3, length4, loading3, loading4, cost_34, *instance);
 
     EXPECT_EQ(route3[1], 17);
     EXPECT_EQ(length3, 7);
@@ -277,80 +258,98 @@ TEST_F(UtilsTest, NodeShiftBetweenTwoRoutes) {
     delete[] route2;
     delete[] route3;
     delete[] route4;
+
+    // boarder check
+    int* route5 = new int[22]{ 0, 10, 0}; //5100
+    int* route6 = new int[22]{ 0, 14, 12, 15, 20, 21, 0}; // 5000
+    int length5 = 3;
+    int length6 = 7;
+    int loading5 = 600;
+    int loading6 = 5000;
+    double cost_56 = instance->compute_total_distance(route5, length5) + instance->compute_total_distance(route6, length6);
+    bool updated = node_relocation_between_two_routes(route5, route6, length5, length6, loading5, loading6, cost_56, *instance);
+
+    EXPECT_EQ(length5, 2);
+    EXPECT_EQ(length6, 8);
+    EXPECT_EQ(loading5, 0);
+    EXPECT_EQ(loading6, 5600);
+    EXPECT_DOUBLE_EQ(cost_56, instance->compute_total_distance(route5, length5) + instance->compute_total_distance(route6, length6));
+
+    delete[] route5;
+    delete[] route6;
 }
 
-TEST_F(UtilsTest, OnePointMoveInterRouteForIndividual) {
-    // interesting node: 6, demand_ 400
-    int* route1 = new int[22]{ 0, 10, 17, 11, 7, 1, 6, 0}; //5100
-    int* route2 = new int[22]{ 0, 14, 12, 15, 20, 21, 0}; // 5000
-    int length1 = 8;
-    int length2 = 7;
-    int loading1 = 5100;
-    int loading2 = 5000;
-    double cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+TEST_F(UtilsTest, NodeRelocationInterForIndividual) {
+//    // another sample data
+//    vector<vector<int>> routes = {
+//            {0,12,0},
+//            {0,15,18,20,17,0},
+//            {0,10,1,2,5,7,9,0},
+//            {0,13,11,4,3,6,8,0},
+//            {0,14,21,19,16,0}
+//    };
+//    vector<int> demand_sum_per_route = {1300, 4600, 5800, 5200, 5600};
 
-    node_shift_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, *instance);
+    vector<vector<int>> routes = {
+            {0, 8, 15, 20, 21, 16, 0},
+            {0, 14, 18, 9, 5, 7, 10, 0},
+            {0, 13, 0},
+            {0, 17, 12, 6, 1, 3, 11, 0},
+            {0, 19, 4, 2, 0}
+    };
+    vector<int> demand_sum_per_route = instance->compute_demand_sum_per_route(routes);
+    double upper_cost = instance->compute_total_distance(routes);
+    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes, upper_cost, demand_sum_per_route);
 
-    // print route1 and route2
-//    for (int i = 0; i < length1; ++i) {
-//        cout << route1[i] << " ";
-//    }
-//    cout << endl;
-//    for (int i = 0; i < length2; ++i) {
-//        cout << route2[i] << " ";
-//    }
-//    cout << endl;
-//    // print length1 and length2
-//    cout << "Length: " << length1 << " " << length2 << endl;
-//    // check the loading
-//    cout << "Loading: " << loading1 << " " << loading2 << endl;
-//    // print the fitness value
-//    cout << "Fitness value: " << cost << endl;
-//    double cost_validation = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
-//    cout << "New Cost: " << cost_validation << endl;
 
-    delete[] route1;
-    delete[] route2;
-
-    vector<vector<int>> routes = routes_constructor_with_split(*instance, rng);
-    shared_ptr<Individual> ind = std::make_shared<Individual>(8, 22, routes,
-                                                               instance->compute_total_distance(routes),
-                                                               instance->compute_demand_sum_per_route(routes));
     double cost_prev = ind->upper_cost;
-
-    one_point_move_inter_route_for_individual(*ind, *instance);
-
+    node_relocation_inter_for_individual(*ind, *instance);
     double cost_cur = ind->upper_cost;
 
+    double ground_truth_cost = instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route);
+    int* ground_truth_demand_sum_per_route = new int[ind->route_cap];
+    instance->compute_demand_sum_per_route(ind->routes, ind->num_routes, ind->num_nodes_per_route, ground_truth_demand_sum_per_route);
+
     EXPECT_LT(cost_cur, cost_prev);
-    EXPECT_DOUBLE_EQ(cost_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
+    EXPECT_DOUBLE_EQ(cost_cur, ground_truth_cost);
+    for (int i = 0; i < ind->num_routes; ++i) {
+        EXPECT_EQ(ind->demand_sum_per_route[i], ground_truth_demand_sum_per_route[i]);
+    }
+
+    delete[] ground_truth_demand_sum_per_route;
 }
 
-TEST_F(UtilsTest, TwoPointMoveIntraRouteForIndividual) {
+TEST_F(UtilsTest, NodeExchangeForSingleRoute) {
     // expected to obtain a better route, and it is {0, 10, 8, 3, 4, 11, 13, 0}
     int* route = new int[22]{0,3,8,13,4,11,10,0};
     int length = 8;
     double cost = instance->compute_total_distance({0,3,8,13,4,11,10,0});
     double cost_prev = cost;
 
-    two_nodes_swap_for_single_route(route, length, cost, *instance);
+    node_exchange_for_single_route(route, length, cost, *instance);
+
+    double ground_truth_cost = instance->compute_total_distance(route, length);
 
     EXPECT_LT(cost, cost_prev);
+    EXPECT_DOUBLE_EQ(cost, ground_truth_cost);
 
     delete[] route;
-
-
-    double fit_prev = individual->upper_cost;
-    two_point_move_intra_route_for_individual(*individual, *instance);
-    double fit_cur = individual->upper_cost;
-
-    double fit_eval = instance->compute_total_distance(individual->routes, individual->num_routes, individual->num_nodes_per_route);
-
-    EXPECT_LT(fit_cur, fit_prev);
-    EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
 }
 
-TEST_F(UtilsTest, TwoNodesSwapBetweenTwoRoutes) {
+TEST_F(UtilsTest, NodeExchangeIntraForIndividual) {
+    unique_ptr<Individual> ind = make_unique<Individual>(*individual);
+
+    double cost_prev = ind->upper_cost;
+    node_exchange_intra_for_individual(*ind, *instance);
+    double cost_cur = ind->upper_cost;
+
+    double ground_truth_cost = instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route);
+
+    EXPECT_LT(cost_cur, cost_prev);
+    EXPECT_DOUBLE_EQ(cost_cur, ground_truth_cost);
+}
+
+TEST_F(UtilsTest, NodeExchangeBetweenTwoRoutes) {
     int* route1 = new int[22]{0,8,3,4,11,13,6, 0};
     int* route2 = new int[22]{0,10, 1,2,5,7,9,0};
     int length1 = 8;
@@ -362,32 +361,40 @@ TEST_F(UtilsTest, TwoNodesSwapBetweenTwoRoutes) {
     int loading1_prev = loading1;
     int loading2_prev = loading2;
 
-    bool updated = two_nodes_swap_between_two_routes(route1, route2, length1, length2, loading1, loading2, fitv, *instance);
+    bool updated = node_exchange_between_two_routes(route1, route2, length1, length2, loading1, loading2, fitv, *instance);
+
+    double ground_truth_cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
+
 
     EXPECT_TRUE(updated);
     EXPECT_EQ(route2[1], 6);
     EXPECT_LT(fitv, fit_prev);
     EXPECT_NE(loading1, loading1_prev);
     EXPECT_EQ(loading1_prev + loading2_prev, loading1 + loading2);
+    EXPECT_DOUBLE_EQ(fitv, ground_truth_cost);
 
     delete[] route1;
     delete[] route2;
 }
 
-TEST_F(UtilsTest, TwoPointMoveInterRouteForIndividual) {
-    double fit_prev = individual->upper_cost;
-    two_point_move_inter_route_for_individual(*individual, *instance);
-    double fit_cur = individual->upper_cost;
+TEST_F(UtilsTest, NodeExchangeInterForIndividual) {
+    unique_ptr<Individual> ind = make_unique<Individual>(*individual);
 
-    double fit_eval = instance->compute_total_distance(individual->routes, individual->num_routes, individual->num_nodes_per_route);
-    int loadingSum = 0;
-    for (int i = 0; i < individual->num_routes; ++i) {
-        loadingSum += individual->demand_sum_per_route[i];
+    double cost_prev = ind->upper_cost;
+    node_exchange_inter_for_individual(*ind, *instance);
+    double cost_cur = ind->upper_cost;
+
+    double ground_truth_cost = instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route);
+
+
+    int loading_sum = 0;
+    for (int i = 0; i < ind->num_routes; ++i) {
+        loading_sum += ind->demand_sum_per_route[i];
     }
 
-    EXPECT_LT(fit_cur, fit_prev);
-    EXPECT_NEAR(fit_cur, fit_eval, 0.000'000'001);
-    EXPECT_EQ(loadingSum, 22'500);
+    EXPECT_LT(cost_cur, cost_prev);
+    EXPECT_EQ(loading_sum, 22'500);
+    EXPECT_DOUBLE_EQ(cost_cur, ground_truth_cost);
 }
 
 TEST_F(UtilsTest, FixOneSolution) {
