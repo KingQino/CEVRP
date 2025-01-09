@@ -19,6 +19,8 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->crossover_prob = 1.0;
     this->mutation_prob = 0.5;
     this->mutation_ind_prob = 0.4;
+    this->num_closest = 5;
+    this->num_elite = 4; // or 1
     this->tournament_size = 2;
     this->refine_threshold_ratio = 1.5;
 
@@ -481,7 +483,7 @@ vector<int> Ma::get_immigrant_chromosome(std::default_random_engine& rng) const 
     return std::move(immigrant);
 }
 
-double Ma::broken_pairs_distance(const Individual& ind1, const Individual& ind2) {
+double Ma::broken_pairs_distance(const Individual& ind1, const Individual& ind2) const {
     int differences = 0;
     for (int j = 1; j <= instance->num_customer_; j++) {
         if (ind1.successors[j] != ind2.successors[j] && ind1.successors[j] != ind2.predecessors[j]) differences++;
@@ -490,13 +492,30 @@ double Ma::broken_pairs_distance(const Individual& ind1, const Individual& ind2)
     return (double)differences / (double)instance->num_customer_;
 }
 
-double Ma::average_broken_pairs_distance_closest(const Individual& ind, int nb_closest) {
+double Ma::average_broken_pairs_distance_closest(const Individual& ind, int num_closest = 5) {
     double result = 0.0;
-    int max_size = std::min<int>(nb_closest, ind.proximate_individuals.size());
+    int max_size = std::min<int>(num_closest, static_cast<int>(ind.proximate_individuals.size()));
     auto it = ind.proximate_individuals.begin();
     for (int i = 0; i < max_size; i++) {
         result += it->first;
         ++it;
     }
     return result / (double)max_size;
+}
+
+void Ma::update_proximate_individuals() {
+    for (size_t i = 0; i < population.size(); ++i) {
+        auto& ind_i = *population[i];
+
+        for (size_t j = i + 1; j < population.size(); ++j) {
+            auto& ind_j = *population[j];
+
+            // Calculate the distance only once for the pair
+            double distance = broken_pairs_distance(ind_i, ind_j);
+
+            // Update both individuals' proximity multisets
+            ind_i.proximate_individuals.insert({distance, &ind_j});
+            ind_j.proximate_individuals.insert({distance, &ind_i});
+        }
+    }
 }
