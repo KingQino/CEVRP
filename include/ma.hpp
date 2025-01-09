@@ -44,10 +44,15 @@ public:
     vector<int> get_immigrant_chromosome(std::default_random_engine& rng) const;
     static vector<double> extract_fitness_values(const vector<unique_ptr<Individual>>& individuals);
     static double calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values);
+    static double calculate_diversity_by_broken_paris_distance(const vector<unique_ptr<Individual>>& individuals, int num_closest);
     static vector<int> select_random(int length, int k, std::default_random_engine& rng); // select k random indexes from 0 to length-1
     void cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine& rng);
     void mut_shuffle_indexes(vector<int>& chromosome, double independent_prob, std::default_random_engine& rng);
 
+    double broken_pairs_distance(const Individual& ind1, const Individual& ind2) const; // distance measure between two individuals, used for diversity calculations
+    static double average_broken_pairs_distance_closest(const Individual& ind, int num_closest); // returns the average broken pairs distance of this individual with the nbClosest individuals in the population
+    void update_proximate_individuals(); // updates the proximate individuals of the individual in the population
+    void update_biased_fitness(); // updates the biased fitness of the individual
 
     Case* instance;
     vector<unique_ptr<Individual>> population;
@@ -79,6 +84,9 @@ public:
     deque<double> P; // list for confidence intervals of local search
     double r; // confidence interval is used to judge whether an upper-level sub-solution should make the charging process
 
+    // diversity
+    int num_closest; // the number of closest individuals to calculate the diversity
+    int num_elite; // the number of elite individuals to be preserved
 
     // refine
     double refine_threshold_ratio; // threshold ratio for accepting bad solutions

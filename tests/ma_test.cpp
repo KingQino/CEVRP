@@ -79,3 +79,94 @@ TEST_F(MaTest, Run) {
     EXPECT_EQ(ma->global_best->num_routes, 4);
     EXPECT_NEAR(ma->global_best->lower_cost, 384.678, 0.0001);
 }
+
+TEST_F(MaTest, InitIndByChromosome) {
+    vector<vector<int>> routes = {
+            {0,17,20,18,15,12,0},
+            {0,16,19,21,14,0},
+            {0,10,1,2,5,7,9,0},
+            {0,8,6,3,4,11,13,0}
+    };
+    double upper_cost = instance->compute_total_distance(routes);
+    vector<int> demand_sum_per_route = instance->compute_demand_sum_per_route(routes);
+    unique_ptr<Individual> ind_constructor = make_unique<Individual>(ma->route_cap, ma->node_cap, routes, upper_cost, demand_sum_per_route);
+
+
+    vector<int> chromosome = {17,20,18,15,12,16,19,21,14,10,1,2,5,7,9,8,6,3,4,11,13};
+    unique_ptr<Individual> ind_init_by_chromosome = make_unique<Individual>(ma->route_cap, ma->node_cap);
+    ma->init_ind_by_chromosome(*ind_init_by_chromosome, chromosome);
+
+
+    // check the diversity-related parameters
+    EXPECT_EQ(ind_constructor->successors, ind_init_by_chromosome->successors);
+    EXPECT_TRUE(std::equal(
+            ind_constructor->predecessors.begin() + 1, ind_constructor->predecessors.end(),
+            ind_init_by_chromosome->predecessors.begin() + 1, ind_init_by_chromosome->predecessors.end()
+    ));
+}
+
+TEST_F(MaTest, UpdateProximateIndividuals) {
+    ma->initialize_heuristic();
+
+    ma->update_proximate_individuals();
+
+    std::sort(ma->population.begin(), ma->population.end(), [](const unique_ptr<Individual>& a, const unique_ptr<Individual>& b) {
+        return a->upper_cost < b->upper_cost;
+    });
+
+    // Ranking the individuals based on their diversity contribution (decreasing order of distance)
+    vector<pair<double, int>> div_ranking;
+    div_ranking.reserve((int)ma->population.size());
+    for (int i = 0 ; i < (int)ma->population.size(); i++) {
+        div_ranking.emplace_back(-Ma::average_broken_pairs_distance_closest(*ma->population[i], 5),i);
+    }
+    std::sort(div_ranking.begin(), div_ranking.end()); // the value is negative, so the smaller the value, the larger the distance (i.e., the higher the diversity)
+
+    EXPECT_EQ(div_ranking.size(), 100);
+    EXPECT_EQ(ma->population[div_ranking[99].second]->proximate_individuals.size(), 99);
+    EXPECT_LT(div_ranking[0].first, div_ranking[99].first);
+
+    // print div_ranking
+//    cout << "Diversity ranking: \n";
+//    for (int i = 0; i < (int)ma->population.size(); i++) {
+//        cout << div_ranking[i].first << " ";
+//        cout << div_ranking[i].second << " ";
+//        cout << ma->population[div_ranking[i].second]->upper_cost << "\n";
+//    }
+//    cout << endl;
+
+    // Update the biased fitness values
+    for (int i = 0; i < ma->pop_size; ++i) {
+        double normalized_div_ranking = (double)i / (double)(ma->pop_size - 1); // ranking from 0 to 1 => 0 is the best
+        double normalized_obj_ranking = (double)div_ranking[i].second / (double)(ma->pop_size - 1); // calculate the corresponding ranking of the individual in terms of objective value => 0 is the best
+
+        ma->population[div_ranking[i].second]->biased_fitness = normalized_obj_ranking + (1.0 - (double)ma->num_elite / (double)ma->pop_size) * normalized_div_ranking;
+    }
+
+    vector<pair<double, int>> biased_fitness_ranking;
+    biased_fitness_ranking.reserve((int)ma->population.size());
+    for (int i = 0 ; i < (int)ma->population.size(); i++) {
+        biased_fitness_ranking.emplace_back(ma->population[i]->biased_fitness,i);
+    }
+    std::sort(biased_fitness_ranking.begin(), biased_fitness_ranking.end());
+
+//    cout << "Biased fitness values: \n";
+//    for (int i = 0; i < (int)ma->population.size(); i++) {
+//        cout << biased_fitness_ranking[i].first << " ";
+//        cout << biased_fitness_ranking[i].second << "\n";
+//    }
+//    cout << endl;
+
+    EXPECT_EQ(biased_fitness_ranking.size(), 100);
+    EXPECT_LT(biased_fitness_ranking[0].first, biased_fitness_ranking[99].first);
+
+    // judge whether the duplicate individual is in the population
+    int count = 0;
+    for (int i = 0; i < ma->pop_size; ++i) {
+        if (Ma::average_broken_pairs_distance_closest(*ma->population[i], 1) < 1e-8) {
+            count += 1;
+        }
+    }
+
+    EXPECT_GT(count, 1);
+}

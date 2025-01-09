@@ -19,6 +19,8 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->crossover_prob = 1.0;
     this->mutation_prob = 0.5;
     this->mutation_ind_prob = 0.4;
+    this->num_closest = 5;
+    this->num_elite = 4; // or 1
     this->tournament_size = 2;
     this->refine_threshold_ratio = 1.5;
 
@@ -217,6 +219,8 @@ void Ma::run_heuristic() {
     if (global_best->lower_cost > iter_best->lower_cost) {
         global_best = make_unique<Individual>(*iter_best);
     }
+    update_proximate_individuals();
+    diversity = calculate_diversity_by_broken_paris_distance(population, num_closest);
 //    auto iter_upper_best = select_best_upper_individual_ptr(S1);
 //    if (global_upper_best->upper_cost > iter_upper_best->upper_cost) {
 //        global_upper_best = make_unique<Individual>(*iter_upper_best); // create a new copy of the global upper best
@@ -380,8 +384,22 @@ void Ma::init_ind_by_chromosome(Individual &ind, const vector<int> &chromosome) 
 
         int customer_pos = 1;
         for (auto it = chromosome.begin() + i; it < chromosome.begin() + j; ++it) {
-            ind.routes[route_index][customer_pos++] = *it;
+            ind.routes[route_index][customer_pos] = *it;
+
+            // Update predecessors and successors
+            if (customer_pos == 1) {
+                ind.predecessors[*it] = instance->depot_; // First customer of the route points to the depot
+            } else {
+                int prev_node = ind.routes[route_index][customer_pos - 1];
+                ind.predecessors[*it] = prev_node;
+                ind.successors[prev_node] = *it;
+            }
+            customer_pos++;
         }
+        // Set depot as successor of the last node in the route
+        int last_node = ind.routes[route_index][customer_pos - 1];
+        ind.successors[last_node] = instance->depot_; // Last customer points back to the depot
+
         ind.num_nodes_per_route[route_index] = customer_pos + 1;
 
         route_index++; // Move to the next route
@@ -460,6 +478,16 @@ Individual* Ma::select_best_upper_individual_ptr(const vector<Individual*>& indi
     };
     auto best_individual = std::min_element(individuals.begin(), individuals.end(), comparator);
     return *best_individual;
+}
+
+double Ma::calculate_diversity_by_broken_paris_distance(const vector<unique_ptr<Individual>>& individuals, int num_closest) {
+    double sum = 0.;
+    int size = static_cast<int>(individuals.size());
+    for (int i = 0; i < size; ++i) {
+        sum += average_broken_pairs_distance_closest(*individuals[i], num_closest);
+    }
+
+    return sum/(double)size;
 }
 
 double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values) {
@@ -575,4 +603,78 @@ vector<int> Ma::get_immigrant_chromosome(std::default_random_engine& rng) const 
     std::shuffle(immigrant.begin(), immigrant.end(), rng);
 
     return std::move(immigrant);
+}
+
+double Ma::broken_pairs_distance(const Individual& ind1, const Individual& ind2) const {
+    int differences = 0;
+    for (int j = 1; j <= instance->num_customer_; j++) {
+        if (ind1.successors[j] != ind2.successors[j] && ind1.successors[j] != ind2.predecessors[j]) differences++;
+        if (ind1.predecessors[j] == 0 && ind2.predecessors[j] != 0 && ind2.successors[j] != 0) differences++;
+    }
+    return (double)differences / (double)instance->num_customer_;
+}
+
+double Ma::average_broken_pairs_distance_closest(const Individual& ind, int num_closest = 5) {
+    double result = 0.0;
+    int max_size = std::min<int>(num_closest, static_cast<int>(ind.proximate_individuals.size()));
+    auto it = ind.proximate_individuals.begin();
+    for (int i = 0; i < max_size; i++) {
+        result += it->first;
+        ++it;
+    }
+    return result / (double)max_size;
+}
+
+void Ma::update_proximate_individuals() {
+    for (size_t i = 0; i < population.size(); ++i) {
+        auto& ind_i = *population[i];
+
+        for (size_t j = i + 1; j < population.size(); ++j) {
+            auto& ind_j = *population[j];
+
+            // Calculate the distance only once for the pair
+            double distance = broken_pairs_distance(ind_i, ind_j);
+
+            // Update both individuals' proximity multisets
+            ind_i.proximate_individuals.insert({distance, &ind_j});
+            ind_j.proximate_individuals.insert({distance, &ind_i});
+        }
+    }
+}
+
+void Ma::update_biased_fitness() {
+    for (size_t i = 0; i < population.size(); ++i) {
+        auto& ind_i = *population[i];
+
+        for (size_t j = i + 1; j < population.size(); ++j) {
+            auto& ind_j = *population[j];
+
+            // Calculate the distance only once for the pair
+            double distance = broken_pairs_distance(ind_i, ind_j);
+
+            // Update both individuals' proximity multisets
+            ind_i.proximate_individuals.insert({distance, &ind_j});
+            ind_j.proximate_individuals.insert({distance, &ind_i});
+        }
+    }
+
+    std::sort(population.begin(), population.end(), [](const unique_ptr<Individual>& a, const unique_ptr<Individual>& b) {
+        return a->upper_cost < b->upper_cost;
+    });
+
+    // Ranking the individuals based on their diversity contribution (decreasing order of distance)
+    vector<pair<double, int>> div_ranking;
+    div_ranking.reserve(pop_size);
+    for (int i = 0 ; i < pop_size; i++) {
+        div_ranking.emplace_back(-Ma::average_broken_pairs_distance_closest(*population[i], num_closest),i);
+    }
+    std::sort(div_ranking.begin(), div_ranking.end()); // the value is negative, so the smaller the value, the larger the distance (i.e., the higher the diversity)
+
+    // Update the biased fitness values
+    for (int i = 0; i < pop_size; ++i) {
+        double normalized_div_ranking = (double)i / (double)(pop_size - 1); // ranking from 0 to 1 => 0 is the best
+        double normalized_obj_ranking = (double)div_ranking[i].second / (double)(pop_size - 1); // calculate the corresponding ranking of the individual in terms of objective value => 0 is the best
+
+        population[div_ranking[i].second]->biased_fitness = normalized_obj_ranking + (1.0 - (double)num_elite / (double)pop_size) * normalized_div_ranking;
+    }
 }
