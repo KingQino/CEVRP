@@ -162,13 +162,22 @@ void Ma::run_heuristic() {
 //    }
 //    cout << endl;
 
-    vector<Individual*> selected_individuals = sel_tournament_by_fitness(population_raw_ptrs, pop_size, tournament_size, random_engine);
+    vector<Individual*> selected_individuals = sel_tournament_by_fitness(population_raw_ptrs, 80, tournament_size, random_engine);
+    vector<Individual*> elite_individuals(population_raw_ptrs.begin(), population_raw_ptrs.begin() + 10);
 
     vector<vector<int>> offspring;
     offspring.reserve(pop_size);
-    for (int i = 0; i < pop_size; i += 2) {
+    for (int i = 0; i < 40; i++) {
         vector<int> parent1 = selected_individuals[i]->get_chromosome();
-        vector<int> parent2 = selected_individuals[i + 1]->get_chromosome();
+        vector<int> parent2 = selected_individuals[i + 40]->get_chromosome();
+        cx_partially_matched(parent1, parent2, random_engine);
+        offspring.push_back(std::move(parent1));
+        offspring.push_back(std::move(parent2));
+    }
+    for (int i = 0; i < 10; ++i) {
+        vector<int> parent1 = elite_individuals[i]->get_chromosome();
+        vector<int> parent2(instance->customers_);
+        shuffle(parent2.begin(), parent2.end(), random_engine);
         cx_partially_matched(parent1, parent2, random_engine);
         offspring.push_back(std::move(parent1));
         offspring.push_back(std::move(parent2));
@@ -181,7 +190,7 @@ void Ma::run_heuristic() {
 
     // update the population
     for (int i = 0; i < pop_size; ++i) {
-        if (population[i].get() == iter_best) continue; // skip the best individual
+//        if (population[i].get() == iter_best) continue; // skip the best individual
 
         // reset individual & update through chromosome
         population[i]->reset();
