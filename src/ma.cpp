@@ -19,7 +19,7 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->crossover_prob = 1.0;
     this->mutation_prob = 0.5;
     this->mutation_ind_prob = 0.4;
-    this->num_closest = 5;
+    this->num_closest = 3;
     this->num_elite = 4; // or 1
     this->tournament_size = 2;
     this->refine_threshold_ratio = 1.5;
@@ -337,7 +337,7 @@ double Ma::calculate_diversity_by_broken_paris_distance(const vector<unique_ptr<
         sum += average_broken_pairs_distance_closest(*individuals[i], num_closest);
     }
 
-    return sum/(double)size;
+    return sum/static_cast<double>(size);
 }
 
 double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values) {
@@ -497,7 +497,7 @@ double Ma::average_broken_pairs_distance_closest(const Individual& ind, int num_
         result += it->first;
         ++it;
     }
-    return result / (double)max_size;
+    return result / static_cast<double>(max_size);
 }
 
 void Ma::update_proximate_individuals() {
