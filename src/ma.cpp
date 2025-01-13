@@ -19,7 +19,7 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->crossover_prob = 1.0;
     this->mutation_prob = 0.5;
     this->mutation_ind_prob = 0.4;
-    this->num_closest = 5;
+    this->num_closest = 3;
     this->num_elite = 4; // or 1
     this->tournament_size = 2;
     this->refine_threshold_ratio = 1.5;
@@ -171,7 +171,7 @@ void Ma::run_heuristic() {
         int cx_count_between_elites = int(0.45 * pop_size);
         int cx_count_between_elite_and_immigrant = int(0.05 * pop_size);
         for (int i = 0; i < cx_count_between_elites; ++i) {
-            vector<int> selected_indices = select_random(pop_size, 2, random_engine);
+            vector<int> selected_indices = sel_random(pop_size, 2, random_engine);
             vector<int> elite1(local_optimised_pool[selected_indices[0]]);
             vector<int> elite2(local_optimised_pool[selected_indices[1]]);
 
@@ -181,7 +181,7 @@ void Ma::run_heuristic() {
             chromosomes.push_back(std::move(elite2));
         }
         for (int i = 0; i < cx_count_between_elite_and_immigrant; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
+            int selected_index = sel_random(pop_size, 1, random_engine)[0];
             vector<int> elite(local_optimised_pool[selected_index]);
             vector<int> immigrant = get_immigrant_chromosome(random_engine);
 
@@ -195,7 +195,7 @@ void Ma::run_heuristic() {
         int cx_count = int(0.5 * pop_size);
 
         for (int i = 0; i < cx_count; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
+            int selected_index = sel_random(pop_size, 1, random_engine)[0];
             vector<int> elite(local_optimised_pool[selected_index]);
             vector<int> immigrant = get_immigrant_chromosome(random_engine);
 
@@ -285,6 +285,11 @@ void Ma::init_ind_by_chromosome(Individual &ind, const vector<int> &chromosome) 
                 ind.successors[prev_node] = *it;
             }
             customer_pos++;
+
+            // when the index 'customer_pos' move to the end of the route (i.e., the depot)
+            if (customer_pos == j - i + 1) {
+                ind.predecessors[instance->depot_] = *it; // Last customer points to the depot
+            }
         }
         // Set depot as successor of the last node in the route
         int last_node = ind.routes[route_index][customer_pos - 1];
@@ -377,7 +382,7 @@ double Ma::calculate_diversity_by_broken_paris_distance(const vector<unique_ptr<
         sum += average_broken_pairs_distance_closest(*individuals[i], num_closest);
     }
 
-    return sum/(double)size;
+    return sum/static_cast<double>(size);
 }
 
 double Ma::calculate_diversity_by_normalized_fitness_difference(const vector<double>& fitness_values) {
@@ -420,13 +425,19 @@ vector<double> Ma::extract_fitness_values(const vector<unique_ptr<Individual>>& 
     return std::move(fitness_values);
 }
 
-vector<int> Ma::select_random(int length, int k, std::default_random_engine &rng) {
-    std::vector<int> indices(length);
-    std::iota(indices.begin(), indices.end(), 0);
-    std::shuffle(indices.begin(), indices.end(), rng);
-    indices.resize(k);
+vector<int> Ma::sel_random(int length, int k, std::default_random_engine &rng) {
+    if (k > length) {
+        throw std::invalid_argument("k cannot be greater than length");
+    }
 
-    return std::move(indices);
+    std::vector<int> selected_indices;
+    std::uniform_int_distribution<int> dist(0, length - 1);
+
+    while (static_cast<int>(selected_indices.size()) < k) {
+        selected_indices.push_back(dist(rng));
+    }
+
+    return std::move(selected_indices);
 }
 
 void Ma::cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine &rng) {
@@ -501,7 +512,7 @@ double Ma::broken_pairs_distance(const Individual& ind1, const Individual& ind2)
         if (ind1.successors[j] != ind2.successors[j] && ind1.successors[j] != ind2.predecessors[j]) differences++;
         if (ind1.predecessors[j] == 0 && ind2.predecessors[j] != 0 && ind2.successors[j] != 0) differences++;
     }
-    return (double)differences / (double)instance->num_customer_;
+    return static_cast<double>(differences) / static_cast<double>(instance->num_customer_);
 }
 
 double Ma::average_broken_pairs_distance_closest(const Individual& ind, int num_closest = 5) {
@@ -512,7 +523,7 @@ double Ma::average_broken_pairs_distance_closest(const Individual& ind, int num_
         result += it->first;
         ++it;
     }
-    return result / (double)max_size;
+    return result / static_cast<double>(max_size);
 }
 
 void Ma::update_proximate_individuals() {

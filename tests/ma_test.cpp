@@ -44,7 +44,7 @@ TEST_F(MaTest, CalculateDiversityByNormalizedFitnessDifference) {
 TEST_F(MaTest, SelectRandom) {
     // Note: on different platforms or different-version compilers, the selected indices may vary (i.e., the generated random engine may be different)
     std::vector<int> chromosome = {1, 2, 3, 4, 5};
-    std::vector<int> selected_indices = Ma::select_random(5, 2, ma->random_engine);
+    std::vector<int> selected_indices = Ma::sel_random(5, 2, ma->random_engine);
 
     EXPECT_EQ(selected_indices.size(), 2);
 }
