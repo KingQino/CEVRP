@@ -119,8 +119,8 @@ void Ma::initialize_heuristic() {
     global_best = make_unique<Individual>(route_cap, node_cap);
     global_best->lower_cost = INFEASIBLE;
 
-    global_upper_best = make_unique<Individual>(route_cap, node_cap);
-    global_upper_best->upper_cost = INFEASIBLE;
+//    global_upper_best = make_unique<Individual>(route_cap, node_cap);
+//    global_upper_best->upper_cost = INFEASIBLE;
 }
 
 void Ma::run_heuristic() {
@@ -136,12 +136,16 @@ void Ma::run_heuristic() {
         fix_one_solution(*ind, *instance);
     }
 
+    // sorting `population` by the upper cost
+    std::sort(population.begin(), population.end(), [](const unique_ptr<Individual>& a, const unique_ptr<Individual>& b) {
+        return a->upper_cost < b->upper_cost;
+    });
+
     vector<Individual*> population_raw_ptrs;
     population_raw_ptrs.reserve(population.size());
     for (const auto& individual : population) {
         population_raw_ptrs.push_back(individual.get());
     }
-
     // iteration-best individual goes to the next iteration
     auto iter_best = select_best_individual_ptr(population_raw_ptrs);
     if (global_best->lower_cost > iter_best->lower_cost) {
@@ -150,8 +154,15 @@ void Ma::run_heuristic() {
 
     update_proximate_individuals();
     diversity = calculate_diversity_by_broken_paris_distance(population, num_closest);
+    update_biased_fitness();
 
-    vector<Individual*> selected_individuals = sel_tournament(population_raw_ptrs, pop_size, tournament_size, random_engine);
+//    cout << "iter: " << iter << " | " << "global best: " << global_best->lower_cost << " | " << "diversity: " << diversity << endl;
+//    for (int i = 0; i < pop_size; ++i) {
+//        cout << i << " | " << "upper cost: " << population[i]->upper_cost << " | " << "lower cost: " << population[i]->lower_cost << " | " << "biased fitness: " << population[i]->biased_fitness << endl;
+//    }
+//    cout << endl;
+
+    vector<Individual*> selected_individuals = sel_tournament_by_fitness(population_raw_ptrs, pop_size, tournament_size, random_engine);
 
     vector<vector<int>> offspring;
     offspring.reserve(pop_size);
@@ -414,6 +425,25 @@ vector<Individual*> Ma::sel_tournament(const vector<Individual*>& individuals, i
     return chosen;
 }
 
+vector<Individual*> Ma::sel_tournament_by_fitness(const vector<Individual*>& individuals, int k, int tournament_scale, std::default_random_engine& rng) const {
+    // k is the number of individuals to be selected
+    vector<Individual*> chosen;
+
+    for (int i = 0; i < k; ++i) {
+        vector<int> aspirants = sel_random(pop_size, tournament_scale, rng);
+
+        // Assuming you have a fitness attribute in your Individual class
+        auto comparator = [&](const int& ind1, const int& ind2) {
+            return individuals[ind1]->biased_fitness < individuals[ind2]->biased_fitness;
+        };
+
+        auto minElement = min_element(aspirants.begin(), aspirants.end(), comparator);
+        chosen.push_back(individuals[*minElement]);
+    }
+
+    return chosen;
+}
+
 void Ma::cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine &rng) {
     int point1 = uniform_int_dist(rng);
     int point2 = uniform_int_dist(rng);
@@ -518,12 +548,6 @@ void Ma::update_proximate_individuals() {
 }
 
 void Ma::update_biased_fitness() {
-    update_proximate_individuals();
-
-    std::sort(population.begin(), population.end(), [](const unique_ptr<Individual>& a, const unique_ptr<Individual>& b) {
-        return a->upper_cost < b->upper_cost;
-    });
-
     // Ranking the individuals based on their diversity contribution (decreasing order of distance)
     vector<pair<double, int>> div_ranking;
     div_ranking.reserve(pop_size);

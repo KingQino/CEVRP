@@ -199,5 +199,7 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual) {
     }
     os << "\n";
 
+    os << "Biased Fitness: " << individual.biased_fitness << "\n";
+
     return os;
 }

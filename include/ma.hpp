@@ -47,6 +47,7 @@ public:
     static double calculate_diversity_by_broken_paris_distance(const vector<unique_ptr<Individual>>& individuals, int num_closest);
     static vector<int> sel_random(int length, int k, std::default_random_engine& rng); // select k random indexes from 0 to length-1
     vector<Individual*> sel_tournament(const vector<Individual*>& individuals, int k, int tournament_scale, std::default_random_engine& rng) const;
+    vector<Individual*> sel_tournament_by_fitness(const vector<Individual*>& individuals, int k, int tournament_scale, std::default_random_engine& rng) const;
     void cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine& rng);
     void mut_shuffle_indexes(vector<int>& chromosome, double independent_prob, std::default_random_engine& rng);
 
