@@ -44,7 +44,7 @@ TEST_F(MaTest, CalculateDiversityByNormalizedFitnessDifference) {
 TEST_F(MaTest, SelectRandom) {
     // Note: on different platforms or different-version compilers, the selected indices may vary (i.e., the generated random engine may be different)
     std::vector<int> chromosome = {1, 2, 3, 4, 5};
-    std::vector<int> selected_indices = Ma::select_random(5, 2, ma->random_engine);
+    std::vector<int> selected_indices = Ma::sel_random(5, 2, ma->random_engine);
 
     EXPECT_EQ(selected_indices.size(), 2);
 }
@@ -99,6 +99,10 @@ TEST_F(MaTest, InitIndByChromosome) {
 
     // check the diversity-related parameters
     EXPECT_EQ(ind_constructor->successors, ind_init_by_chromosome->successors);
+    EXPECT_EQ(ind_constructor->predecessors[0],
+              ind_constructor->routes[ind_constructor->num_routes - 1][ind_constructor->num_nodes_per_route[ind_constructor->num_routes - 1] - 2]);
+    EXPECT_EQ(ind_init_by_chromosome->predecessors[0],
+              ind_init_by_chromosome->routes[ind_init_by_chromosome->num_routes - 1][ind_init_by_chromosome->num_nodes_per_route[ind_init_by_chromosome->num_routes - 1] - 2]);
     EXPECT_TRUE(std::equal(
             ind_constructor->predecessors.begin() + 1, ind_constructor->predecessors.end(),
             ind_init_by_chromosome->predecessors.begin() + 1, ind_init_by_chromosome->predecessors.end()
@@ -106,6 +110,51 @@ TEST_F(MaTest, InitIndByChromosome) {
 }
 
 TEST_F(MaTest, UpdateProximateIndividuals) {
+    ma->initialize_heuristic();
+
+    ma->update_proximate_individuals();
+
+    double low_div_1, low_div_2, high_div_1, high_div_2;
+    Individual* low_div_neighbor_1;
+    Individual* low_div_neighbor_2;
+    Individual* high_div_neighbor_1;
+    Individual* high_div_neighbor_2;
+
+    auto it = ma->population[0]->proximate_individuals.begin();
+    for (int i = 0; i < 99; ++i) {
+        if (i == 1) {
+            low_div_1 = it->first;
+            low_div_neighbor_1 = it->second;
+        }
+
+        if (i == 2) {
+            low_div_2 = it->first;
+            low_div_neighbor_2 = it->second;
+        }
+
+        if (i == 96) {
+            high_div_1 = it->first;
+            high_div_neighbor_1 = it->second;
+        }
+
+        if (i == 97) {
+            high_div_2 = it->first;
+            high_div_neighbor_2 = it->second;
+        }
+
+        ++it;
+    }
+
+    EXPECT_EQ(ma->population[0]->proximate_individuals.size(), ma->pop_size - 1);
+    EXPECT_DOUBLE_EQ(low_div_1, low_div_2);
+    EXPECT_NE(low_div_neighbor_1, low_div_neighbor_2);
+    EXPECT_NE(low_div_neighbor_1->upper_cost, low_div_neighbor_2->upper_cost);
+    EXPECT_DOUBLE_EQ(high_div_1, high_div_2);
+    EXPECT_NE(high_div_neighbor_1, high_div_neighbor_2);
+    EXPECT_NE(high_div_neighbor_1->upper_cost, high_div_neighbor_2->upper_cost);
+}
+
+TEST_F(MaTest, UpdateBiasedFitness) {
     ma->initialize_heuristic();
 
     ma->update_proximate_individuals();

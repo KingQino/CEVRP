@@ -147,80 +147,35 @@ void Ma::run_heuristic() {
     if (global_best->lower_cost > iter_best->lower_cost) {
         global_best = make_unique<Individual>(*iter_best); // create a new copy of the iter best
     }
-    auto iter_upper_best = select_best_upper_individual_ptr(population_raw_ptrs);
-    if (global_upper_best->upper_cost > iter_upper_best->upper_cost) {
-        global_upper_best = make_unique<Individual>(*iter_upper_best); // create a new copy of the global upper best
-    }
 
-
-    vector<vector<int>> local_optimised_pool;
-    local_optimised_pool.reserve(pop_size);
-    for(auto& ind : population) {
-        local_optimised_pool.push_back(ind->get_chromosome());
-    }
-
-    vector<vector<int>> chromosomes;
-    chromosomes.reserve(pop_size);
-
-    // adaptive selection for crossover
     update_proximate_individuals();
     diversity = calculate_diversity_by_broken_paris_distance(population, num_closest);
-//    diversity = calculate_diversity_by_normalized_fitness_difference(extract_fitness_values(population));
-    if (diversity > 0.5 ) {
-        // a value close to 1 indicates high diversity
-        int cx_count_between_elites = int(0.45 * pop_size);
-        int cx_count_between_elite_and_immigrant = int(0.05 * pop_size);
-        for (int i = 0; i < cx_count_between_elites; ++i) {
-            vector<int> selected_indices = select_random(pop_size, 2, random_engine);
-            vector<int> elite1(local_optimised_pool[selected_indices[0]]);
-            vector<int> elite2(local_optimised_pool[selected_indices[1]]);
 
-            cx_partially_matched(elite1, elite2, random_engine);
+    vector<Individual*> selected_individuals = sel_tournament(population_raw_ptrs, pop_size, tournament_size, random_engine);
 
-            chromosomes.push_back(std::move(elite1));
-            chromosomes.push_back(std::move(elite2));
-        }
-        for (int i = 0; i < cx_count_between_elite_and_immigrant; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
-
-            cx_partially_matched(elite, immigrant, random_engine);
-
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
-        }
-    } else {
-        // a value near 0 indicates low diversity
-        int cx_count = int(0.5 * pop_size);
-
-        for (int i = 0; i < cx_count; ++i) {
-            int selected_index = select_random(pop_size, 1, random_engine)[0];
-            vector<int> elite(local_optimised_pool[selected_index]);
-            vector<int> immigrant = get_immigrant_chromosome(random_engine);
-
-            cx_partially_matched(elite, immigrant, random_engine);
-
-            chromosomes.push_back(std::move(elite));
-            chromosomes.push_back(std::move(immigrant));
-        }
+    vector<vector<int>> offspring;
+    offspring.reserve(pop_size);
+    for (int i = 0; i < pop_size; i += 2) {
+        vector<int> parent1 = selected_individuals[i]->get_chromosome();
+        vector<int> parent2 = selected_individuals[i + 1]->get_chromosome();
+        cx_partially_matched(parent1, parent2, random_engine);
+        offspring.push_back(std::move(parent1));
+        offspring.push_back(std::move(parent2));
     }
-
-    // mutation
-    for (auto& chromosome : chromosomes) {
+    for (int i = 0; i < pop_size; ++i) {
         if (uniform_real_dist(random_engine) < mutation_prob) {
-            mut_shuffle_indexes(chromosome, mutation_ind_prob, random_engine);
+            mut_shuffle_indexes(offspring[i], mutation_ind_prob, random_engine);
         }
     }
 
     // update the population
     for (int i = 0; i < pop_size; ++i) {
-        if (population[i].get() == iter_best) continue; // Skip the best individual
+        if (population[i].get() == iter_best) continue; // skip the best individual
 
         // reset individual & update through chromosome
         population[i]->reset();
 
-        init_ind_by_chromosome(*population[i], chromosomes[i]);
+        init_ind_by_chromosome(*population[i], offspring[i]);
     }
 }
 
@@ -278,13 +233,18 @@ void Ma::init_ind_by_chromosome(Individual &ind, const vector<int> &chromosome) 
 
             // Update predecessors and successors
             if (customer_pos == 1) {
-                ind.predecessors[*it] = instance->depot_; // First customer of the route points to the depot
+                ind.predecessors[*it] = 0; // First customer of the route points to the depot
             } else {
                 int prev_node = ind.routes[route_index][customer_pos - 1];
                 ind.predecessors[*it] = prev_node;
                 ind.successors[prev_node] = *it;
             }
             customer_pos++;
+
+            // when the index 'customer_pos' move to the end of the route (i.e., the depot)
+            if (customer_pos == j - i + 1) {
+                ind.predecessors[instance->depot_] = *it; // Last customer points to the depot
+            }
         }
         // Set depot as successor of the last node in the route
         int last_node = ind.routes[route_index][customer_pos - 1];
@@ -420,13 +380,38 @@ vector<double> Ma::extract_fitness_values(const vector<unique_ptr<Individual>>& 
     return std::move(fitness_values);
 }
 
-vector<int> Ma::select_random(int length, int k, std::default_random_engine &rng) {
-    std::vector<int> indices(length);
-    std::iota(indices.begin(), indices.end(), 0);
-    std::shuffle(indices.begin(), indices.end(), rng);
-    indices.resize(k);
+vector<int> Ma::sel_random(int length, int k, std::default_random_engine &rng) {
+    if (k > length) {
+        throw std::invalid_argument("k cannot be greater than length");
+    }
 
-    return std::move(indices);
+    std::vector<int> selected_indices;
+    std::uniform_int_distribution<int> dist(0, length - 1);
+
+    while (static_cast<int>(selected_indices.size()) < k) {
+        selected_indices.push_back(dist(rng));
+    }
+
+    return std::move(selected_indices);
+}
+
+vector<Individual*> Ma::sel_tournament(const vector<Individual*>& individuals, int k, int tournament_scale, std::default_random_engine& rng) const {
+    // k is the number of individuals to be selected
+    vector<Individual*> chosen;
+
+    for (int i = 0; i < k; ++i) {
+        vector<int> aspirants = sel_random(pop_size, tournament_scale, rng);
+
+        // Assuming you have a fitness attribute in your Individual class
+        auto comparator = [&](const int& ind1, const int& ind2) {
+            return individuals[ind1]->upper_cost < individuals[ind2]->upper_cost;
+        };
+
+        auto minElement = min_element(aspirants.begin(), aspirants.end(), comparator);
+        chosen.push_back(individuals[*minElement]);
+    }
+
+    return chosen;
 }
 
 void Ma::cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine &rng) {
@@ -498,10 +483,10 @@ vector<int> Ma::get_immigrant_chromosome(std::default_random_engine& rng) const 
 double Ma::broken_pairs_distance(const Individual& ind1, const Individual& ind2) const {
     int differences = 0;
     for (int j = 1; j <= instance->num_customer_; j++) {
-        if (ind1.successors[j] != ind2.successors[j] && ind1.successors[j] != ind2.predecessors[j]) differences++;
+        if (ind1.successors[j] != ind2.successors[j] && ind1.successors[j] != ind2.predecessors[j]) differences++; // The pair [j, succ(j)] exists in ind1 but is absent in ind2, regardless of whether the pair is in reverse order.
         if (ind1.predecessors[j] == 0 && ind2.predecessors[j] != 0 && ind2.successors[j] != 0) differences++;
     }
-    return (double)differences / (double)instance->num_customer_;
+    return static_cast<double>(differences) / static_cast<double>(instance->num_customer_);
 }
 
 double Ma::average_broken_pairs_distance_closest(const Individual& ind, int num_closest = 5) {
@@ -533,20 +518,7 @@ void Ma::update_proximate_individuals() {
 }
 
 void Ma::update_biased_fitness() {
-    for (size_t i = 0; i < population.size(); ++i) {
-        auto& ind_i = *population[i];
-
-        for (size_t j = i + 1; j < population.size(); ++j) {
-            auto& ind_j = *population[j];
-
-            // Calculate the distance only once for the pair
-            double distance = broken_pairs_distance(ind_i, ind_j);
-
-            // Update both individuals' proximity multisets
-            ind_i.proximate_individuals.insert({distance, &ind_j});
-            ind_j.proximate_individuals.insert({distance, &ind_i});
-        }
-    }
+    update_proximate_individuals();
 
     std::sort(population.begin(), population.end(), [](const unique_ptr<Individual>& a, const unique_ptr<Individual>& b) {
         return a->upper_cost < b->upper_cost;
