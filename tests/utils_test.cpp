@@ -147,9 +147,12 @@ TEST_F(UtilsTest, TwoOptStarBetweenTwoRoutes) {
     int loading1 = 6000;
     int loading2 = 5500;
     int node_cap = individual->node_cap;
+    int* temp_r1 = new int[node_cap];
+    int* temp_r2 = new int[node_cap];
     double cost = instance->compute_total_distance(route1, length1) + instance->compute_total_distance(route2, length2);
 
-    bool updated = two_opt_star_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost, node_cap, *instance);
+    bool updated = two_opt_star_between_two_routes(route1, route2, length1, length2, loading1, loading2, cost,
+                                                   temp_r1, temp_r2, node_cap, *instance);
 
 //    // print route1 and route2
 //    for (int i = 0; i < length1; ++i) {
@@ -178,6 +181,8 @@ TEST_F(UtilsTest, TwoOptStarBetweenTwoRoutes) {
 
     delete[] route1;
     delete[] route2;
+    delete[] temp_r1;
+    delete[] temp_r2;
 }
 
 TEST_F(UtilsTest, TwoOptInterForIndividual) {

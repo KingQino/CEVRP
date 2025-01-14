@@ -356,14 +356,13 @@ void update_route_pairs(unordered_set<pair<int, int>, PairHash>& route_pairs, in
     for (int i = 0; i < r2; i++) route_pairs.insert({i, r2});
 }
 
-bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost, int node_cap, Case& instance) {
+bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int& length2, int& loading1, int& loading2, double& cost,
+                                     int* temp_r1, int* temp_r2, int node_cap, Case& instance) {
     if (length1 < 3 || length2 < 3) return false;
 
     bool updated = false;
-    int partial_dem_r1 = 0; // the partial demand of route r1, i.e., the head partial route
-    int* temp_r1 = new int[node_cap];
-    int* temp_r2 = new int[node_cap];
 
+    int partial_dem_r1 = 0; // the partial demand of route r1, i.e., the head partial route
     for (int n1 = 0; n1 < length1 - 1 && !updated; n1++) {
         partial_dem_r1 += instance.get_customer_demand_(route1[n1]);
 
@@ -375,9 +374,10 @@ bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int
                 double old_cost = instance.get_distance(route1[n1], route1[n1 + 1]) + instance.get_distance(route2[n2], route2[n2 + 1]);
                 double new_cost = instance.get_distance(route1[n1], route2[n2 + 1]) + instance.get_distance(route2[n2], route1[n1 + 1]);
 
-                if (new_cost < old_cost) {
+                double change = old_cost - new_cost;
+                if (change > 1e-8) {
                     // update
-                    cost -= (old_cost - new_cost);
+                    cost -= change;
                     memcpy(temp_r1, route1, sizeof(int) * node_cap);
                     int counter1 = n1 + 1;
                     for (int i = n2 + 1; i < length2; i++) {
@@ -401,8 +401,9 @@ bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int
                 double old_cost = instance.get_distance(route1[n1], route1[n1 + 1]) + instance.get_distance(route2[n2], route2[n2 + 1]);
                 double new_cost = instance.get_distance(route1[n1], route2[n2]) + instance.get_distance(route1[n1 + 1], route2[n2 + 1]);
 
-                if (new_cost < old_cost) {
-                    cost -= (old_cost - new_cost);
+                double change = old_cost - new_cost;
+                if (change > 1e-8) {
+                    cost -= change;
                     memcpy(temp_r1, route1, sizeof(int) * node_cap);
                     int counter1 = n1 + 1;
                     for (int i = n2; i >= 0; i--) {
@@ -430,8 +431,6 @@ bool two_opt_star_between_two_routes(int* route1, int* route2, int& length1, int
         }
     }
 
-    delete[] temp_r1;
-    delete[] temp_r2;
 
     return updated;
 }
@@ -441,6 +440,9 @@ bool two_opt_inter_for_individual(Individual& individual, Case& instance) {
 
     bool flag = false;
 
+    int* temp_r1 = new int[individual.node_cap];
+    int* temp_r2 = new int[individual.node_cap];
+
     unordered_set<pair<int, int>, PairHash> route_pairs = get_route_pairs(individual.num_routes);
     while (!route_pairs.empty()) {
         auto [r1, r2] = *route_pairs.begin();
@@ -449,7 +451,7 @@ bool two_opt_inter_for_individual(Individual& individual, Case& instance) {
         bool updated = two_opt_star_between_two_routes(individual.routes[r1], individual.routes[r2],
                                                        individual.num_nodes_per_route[r1], individual.num_nodes_per_route[r2],
                                                        individual.demand_sum_per_route[r1], individual.demand_sum_per_route[r2],
-                                                       individual.upper_cost, individual.node_cap, instance);
+                                                       individual.upper_cost, temp_r1, temp_r2, individual.node_cap, instance);
 
         // update route pairs
         if (updated) {
@@ -481,6 +483,9 @@ bool two_opt_inter_for_individual(Individual& individual, Case& instance) {
             }
         }
     }
+
+    delete[] temp_r1;
+    delete[] temp_r2;
 
     return flag;
 }
