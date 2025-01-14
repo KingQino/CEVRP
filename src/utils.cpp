@@ -294,6 +294,49 @@ void two_opt_intra_for_individual(Individual& individual, Case& instance) {
     }
 }
 
+void two_opt_for_single_route_best_search(int* route, int length, double& cost, Case& instance) {
+    if (length < 5) return;
+    bool improved = true;
+    double min_change;
+
+    while (improved) {
+
+        improved = false;
+        min_change = 0.0;
+        int min_i = 0, min_j = 0;
+
+        for (int i = 1; i < length - 2; ++i) {
+            for (int j = i + 1; j < length - 1; ++j) {
+                // Calculate the cost difference between the old route and the new route obtained by swapping arcs
+                double original_cost = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[j], route[j + 1]);
+                double modified_cost = instance.get_distance(route[i - 1], route[j]) + instance.get_distance(route[i], route[j + 1]);
+
+                double change = original_cost - modified_cost; // positive represents the cost reduction
+                if (fabs(change) < 1e-8) change = 0;
+                if (min_change < change) {
+                    min_change = change;
+                    min_i = i;
+                    min_j = j;
+                }
+            }
+        }
+
+        if (min_change > 0) {
+            // The cost variation should be considered
+            reverse(route + min_i, route + min_j + 1);
+            cost -= min_change;
+
+            improved = true;
+        }
+    }
+}
+
+void two_opt_intra_for_individual_best_search(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; ++i) {
+        two_opt_for_single_route(individual.routes[i],  individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
+}
+
 bool contains(const int* array, int size, int element) {
     for (int i = 0; i < size; i++) {
         if (array[i] == element) {

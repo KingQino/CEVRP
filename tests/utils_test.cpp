@@ -139,6 +139,31 @@ TEST_F(UtilsTest, TwoOptIntraForIndividual) {
     EXPECT_DOUBLE_EQ(ind->upper_cost, 385.2853879430639);
 }
 
+TEST_F(UtilsTest, TwoOptIntraForIndividualComparisonBetweenFirstAndBestSearch) {
+    vector<unique_ptr<Individual>> population;
+    int sample_size = 1000;
+    for (int i = 0; i < sample_size; ++i) {
+        vector<vector<int>> routes = routes_constructor_with_hien_method(*instance, rng);
+        population.push_back(std::make_unique<Individual>(individual->route_cap, individual->node_cap, routes,
+                                                          instance->compute_total_distance(routes),
+                                                          instance->compute_demand_sum_per_route(routes)));
+    }
+
+    for (int i = 0; i < sample_size; ++i) {
+        unique_ptr<Individual> ind_first_search = std::make_unique<Individual>(*population[i]);
+        unique_ptr<Individual> ind_best_search  = std::make_unique<Individual>(*population[i]);
+        two_opt_intra_for_individual(*ind_first_search, *instance);
+        two_opt_intra_for_individual_best_search(*ind_best_search, *instance);
+
+        if (ind_first_search->upper_cost != ind_best_search->upper_cost) {
+            cout << "Original cost: " << population[i]->upper_cost << " | " << "First search cost: " << ind_first_search->upper_cost <<
+            " | " << "Best search cost: " << ind_best_search->upper_cost << endl;
+
+        }
+
+    }
+}
+
 TEST_F(UtilsTest, TwoOptStarBetweenTwoRoutes) {
     int* route1 = new int[22]{0, 19, 21, 20, 17, 0};
     int* route2 = new int[22]{0, 12, 15, 18, 14, 16, 0};
