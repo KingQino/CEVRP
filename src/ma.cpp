@@ -18,7 +18,7 @@ instance(instance), stop_criteria_option(stop_criteria_option), enable_logging(e
     this->immigrant_ratio = 0.05;
     this->crossover_prob = 1.0;
     this->mutation_prob = 0.5;
-    this->mutation_ind_prob = 0.4;
+    this->mutation_ind_prob = 0.2;
     this->num_closest = 5;
     this->num_elite = 4; // or 1
     this->tournament_size = 2;
@@ -219,8 +219,8 @@ void Ma::run_heuristic() {
     if (global_best->lower_cost > iter_best->lower_cost) {
         global_best = make_unique<Individual>(*iter_best);
     }
-    update_proximate_individuals();
-    diversity = calculate_diversity_by_broken_paris_distance(population, num_closest);
+//    update_proximate_individuals();
+//    diversity = calculate_diversity_by_broken_paris_distance(population, num_closest);
 //    auto iter_upper_best = select_best_upper_individual_ptr(S1);
 //    if (global_upper_best->upper_cost > iter_upper_best->upper_cost) {
 //        global_upper_best = make_unique<Individual>(*iter_upper_best); // create a new copy of the global upper best
@@ -249,7 +249,7 @@ void Ma::run_heuristic() {
         // 90% - elite x non-elites
         for (int i = 0; i < int (0.45 * pop_size); ++i) {
             vector<int> _father(father);
-            vector<int> mother(average_seqs[select_random(static_cast<int>(average_seqs.size()), 1, random_engine)[0]]);
+            vector<int> mother = sel_random(average_seqs, 1, random_engine)[0];
 
             cx_partially_matched(_father, mother, random_engine);
 
@@ -272,42 +272,35 @@ void Ma::run_heuristic() {
         // if the size of the average population is quite small, then only the promising_seqs mate
         if (average_seqs.size() < int(0.1 * pop_size)) {
             for (int i = 0; i < int(pop_size/2); ++i) {
-                vector<int> selected_indices = select_random(static_cast<int>(promising_seqs.size()), 2, random_engine);
-                vector<int> elite1(promising_seqs[selected_indices[0]]);
-                vector<int> elite2(promising_seqs[selected_indices[1]]);
+                vector<vector<int>> parents = sel_random(promising_seqs, 2, random_engine);
 
-                cx_partially_matched(elite1, elite2, random_engine);
+                cx_partially_matched(parents[0], parents[1], random_engine);
 
-                chromosomes.push_back(std::move(elite1));
-                chromosomes.push_back(std::move(elite2));
+                chromosomes.push_back(std::move(parents[0]));
+                chromosomes.push_back(std::move(parents[1]));
             }
         } else {
             // part of elites x elites
             int num_promising_seqs = static_cast<int>(promising_seqs.size());
             int loop_num = int(num_promising_seqs / 2.0) < (pop_size/2) ? int(num_promising_seqs / 2.0) : int(pop_size/4);
             for (int i = 0; i < loop_num; ++i) {
-                vector<int> selected_indices = select_random(static_cast<int>(promising_seqs.size()), 2, random_engine);
-                vector<int> elite1(promising_seqs[selected_indices[0]]);
-                vector<int> elite2(promising_seqs[selected_indices[1]]);
+                vector<vector<int>> parents = sel_random(promising_seqs, 2, random_engine);
 
-                cx_partially_matched(elite1, elite2, random_engine);
+                cx_partially_matched(parents[0], parents[1], random_engine);
 
-                chromosomes.push_back(std::move(elite1));
-                chromosomes.push_back(std::move(elite2));
+                chromosomes.push_back(std::move(parents[0]));
+                chromosomes.push_back(std::move(parents[1]));
             }
             // portion of elites x non-elites
             int num_promising_x_average = pop_size - static_cast<int>(chromosomes.size());
-            for (int i = 0; i < int(num_promising_x_average / 2.0); ++i) { // TODO: DEBUG
-                int promising_idx = select_random(static_cast<int>(promising_seqs.size()), 1, random_engine)[0];
-                int average_idx   = select_random(static_cast<int>(average_seqs.size()), 1, random_engine)[0];
+            for (int i = 0; i < int(num_promising_x_average / 2.0); ++i) {
+                vector<int> parent1 = sel_random(promising_seqs, 1, random_engine)[0];
+                vector<int> parent2 = sel_random(average_seqs, 1, random_engine)[0];
 
-                vector<int> elite1(promising_seqs[promising_idx]);
-                vector<int> elite2(average_seqs[average_idx]);
+                cx_partially_matched(parent1, parent2, random_engine);
 
-                cx_partially_matched(elite1, elite2, random_engine);
-
-                chromosomes.push_back(std::move(elite1));
-                chromosomes.push_back(std::move(elite2));
+                chromosomes.push_back(std::move(parent1));
+                chromosomes.push_back(std::move(parent2));
             }
         }
     }
@@ -530,13 +523,28 @@ vector<double> Ma::extract_fitness_values(const vector<unique_ptr<Individual>>& 
     return std::move(fitness_values);
 }
 
-vector<int> Ma::select_random(int length, int k, std::default_random_engine &rng) {
-    std::vector<int> indices(length);
-    std::iota(indices.begin(), indices.end(), 0);
-    std::shuffle(indices.begin(), indices.end(), rng);
-    indices.resize(k);
+vector<int> Ma::sel_random(int length, int k, std::default_random_engine &rng) {
+    std::vector<int> selected_indices;
+    std::uniform_int_distribution<int> dist(0, length - 1);
 
-    return std::move(indices);
+    while (static_cast<int>(selected_indices.size()) < k) {
+        selected_indices.push_back(dist(rng));
+    }
+
+    return std::move(selected_indices);
+}
+
+vector<vector<int>> Ma::sel_random(const vector<vector<int>>& chromosomes, int k, std::default_random_engine& rng) {
+    vector<vector<int>> selected_chromosomes;
+    selected_chromosomes.reserve(k);
+
+    std::uniform_int_distribution<std::size_t> dist(0, chromosomes.size() - 1);
+    for (int i = 0; i < k; ++i) {
+        std::size_t randomIndex = dist(rng);
+        selected_chromosomes.push_back(chromosomes[randomIndex]);
+    }
+
+    return std::move(selected_chromosomes);
 }
 
 void Ma::cx_partially_matched(vector<int>& parent1, vector<int>& parent2, std::default_random_engine &rng) {
