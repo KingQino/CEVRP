@@ -666,12 +666,9 @@ bool two_opt_move_inter_route_for_individual_acceleration(Individual& individual
 
 void node_relocation_for_single_route(int* route, int length, double& cost, Case& instance) {
     if (length <= 4) return;
-    bool improved = true;
-    double min_change;
+    double min_change = 0.0;
 
-    while (improved) {
-
-        improved = false;
+    do {
         min_change = 0.0;
         int min_i = 0, min_j = 0;
 
@@ -701,16 +698,64 @@ void node_relocation_for_single_route(int* route, int length, double& cost, Case
         if (min_change > 0) {
             moveItoJ(route, min_i, min_j);
             cost -= min_change;
-
-            improved = true;
         }
-    }
+    } while (min_change > 0);
 
 }
 
 void node_relocation_intra_for_individual(Individual& individual, Case& instance) {
     for (int i = 0; i < individual.num_routes; i++) {
         node_relocation_for_single_route(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
+    }
+}
+
+bool node_shift(int* route, int length, double& fitv, Case& instance) {
+    if (length <= 4) return false;
+    double minchange = 0;
+    bool flag = false;
+    do
+    {
+        minchange = 0;
+        int mini = 0, minj = 0;
+        for (int i = 1; i < length - 1; i++) {
+            for (int j = 1; j < length - 1; j++) {
+                if (i < j) {
+                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j], route[j + 1]);
+                    double xx2 = instance.get_distance(route[i - 1], route[i + 1]) + instance.get_distance(route[j], route[i]) + instance.get_distance(route[i], route[j + 1]);
+                    double change = xx1 - xx2;
+                    if (fabs(change) < 0.00000001) change = 0;
+                    if (minchange < change) {
+                        minchange = change;
+                        mini = i;
+                        minj = j;
+                        flag = true;
+                    }
+                }
+                else if (i > j) {
+                    double xx1 = instance.get_distance(route[i - 1], route[i]) + instance.get_distance(route[i], route[i + 1]) + instance.get_distance(route[j - 1], route[j]);
+                    double xx2 = instance.get_distance(route[j - 1], route[i]) + instance.get_distance(route[i], route[j]) + instance.get_distance(route[i - 1], route[i + 1]);
+                    double change = xx1 - xx2;
+                    if (fabs(change) < 0.00000001) change = 0;
+                    if (minchange < change) {
+                        minchange = change;
+                        mini = i;
+                        minj = j;
+                        flag = true;
+                    }
+                }
+            }
+        }
+        if (minchange > 0) {
+            moveItoJ(route, mini, minj);
+            fitv -= minchange;
+        }
+    } while (minchange > 0);
+    return flag;
+}
+
+void node_shift_for_individual(Individual& individual, Case& instance) {
+    for (int i = 0; i < individual.num_routes; i++) {
+        node_shift(individual.routes[i], individual.num_nodes_per_route[i], individual.upper_cost, instance);
     }
 }
 

@@ -247,6 +247,31 @@ TEST_F(UtilsTest, NodeRelocationIntraForIndividual) {
     EXPECT_DOUBLE_EQ(cost_cur, instance->compute_total_distance(ind->routes, ind->num_routes, ind->num_nodes_per_route));
 }
 
+TEST_F(UtilsTest, NodeRelocationIntraForIndividualComparisonBetweenYahuiAndYinghao) {
+    vector<unique_ptr<Individual>> population;
+    int sample_size = 100;
+    for (int i = 0; i < sample_size; ++i) {
+        vector<vector<int>> routes = routes_constructor_with_hien_method(*instance, rng);
+        population.push_back(std::make_unique<Individual>(individual->route_cap, individual->node_cap, routes,
+                                                          instance->compute_total_distance(routes),
+                                                          instance->compute_demand_sum_per_route(routes)));
+    }
+
+    for (int i = 0; i < sample_size; ++i) {
+        unique_ptr<Individual> ind_yinghao = std::make_unique<Individual>(*population[i]);
+        unique_ptr<Individual> ind_yahui  = std::make_unique<Individual>(*population[i]);
+        node_relocation_intra_for_individual(*ind_yinghao, *instance);
+        node_shift_for_individual(*ind_yahui, *instance);
+
+        if (ind_yinghao->upper_cost != ind_yahui->upper_cost) {
+            cout << "Original cost: " << population[i]->upper_cost << " | " << "Yinghao cost: " << ind_yinghao->upper_cost <<
+                 " | " << "Yahui cost: " << ind_yahui->upper_cost << endl;
+
+        }
+
+    }
+}
+
 TEST_F(UtilsTest, NodeRelocationBetweenTwoRoutes) {
     // interesting node: 6, demand_ 400
     int* route1 = new int[22]{0,10,8,6,3, 4,11,13,0}; //5800
