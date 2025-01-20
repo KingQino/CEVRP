@@ -3,6 +3,7 @@
 #include "magic_enum.hpp"
 #include "case.hpp"
 #include "ma.hpp"
+#include "lahc.hpp"
 
 
 using namespace std;
@@ -25,6 +26,10 @@ void run_algorithm(int run, Algorithm algorithm, const string& file_name, bool e
         }
 
         case Algorithm::LAHC: {
+            Lahc* lahc = new Lahc(instance, run, stop_criteria_option, enable_logging);
+            lahc->run();
+            perfOfTrials[run - 1] = lahc->global_best->lower_cost;
+            delete lahc;
             break;
         }
     }

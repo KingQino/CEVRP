@@ -20,6 +20,8 @@ set(DEPENDENCIES
         include/ma.hpp
         src/ma.cpp
         include/heuristic_interface.hpp
+        include/lahc.hpp
+        src/lahc.cpp
 )
 
 
@@ -40,7 +42,8 @@ if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
             tests/case_test.cpp
             tests/utils_test.cpp
             tests/stats_interface_test.cpp
-            tests/ma_test.cpp)
+            tests/ma_test.cpp
+            tests/lahc_test.cpp)
     target_include_directories(Tests PRIVATE include external/include) # Include directories for the tests
     target_link_libraries(Tests gtest gtest_main) # Link GoogleTest for tests
 

@@ -256,6 +256,119 @@ vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance
 }
 
 /****************************************************************/
+/*                        Perturbation                          */
+/****************************************************************/
+
+vector<int> generalized_double_bridge(const std::vector<int>& tour, std::default_random_engine& rng) {
+    int n = static_cast<int>(tour.size());
+    std::vector<int> new_tour(n);
+
+    // If the tour is too short, return the original tour
+    if (n < 4) {
+        return tour;
+    }
+
+    std::uniform_int_distribution<> dist_binary(0, 1);
+
+    // Randomly choose three different split points
+    std::set<int> split_points;
+    while (split_points.size() < 3) {
+        split_points.insert(std::uniform_int_distribution<>(1, n - 1)(rng));
+    }
+
+    auto it = split_points.begin();
+    int split1 = *it++;
+    int split2 = *it++;
+    int split3 = *it;
+
+
+    // Ensure split1 < split2 < split3, then we get four subtours, [0, split1), [split1, split2), [split2, split3), [split3, n-1]
+    if (split1 > split2) {
+        std::swap(split1, split2);
+    }
+    if (split2 > split3) {
+        std::swap(split2, split3);
+    }
+    if (split1 > split2) {
+        std::swap(split1, split2);
+    }
+
+    // randomly shuffle the order of the four subtours
+    std::vector<int> order = {0, 1, 2, 3};
+    std::shuffle(order.begin(), order.end(), rng);
+
+    // reconnect the subtours in the new order
+    int index = 0;
+    for (int i : order) {
+        vector<int> temp;
+        switch (i) {
+            case 0:
+                temp = vector<int>(tour.begin(), tour.begin() + split1);
+                break;
+            case 1:
+                temp = vector<int>(tour.begin() + split1, tour.begin() + split2);
+                break;
+            case 2:
+                temp = vector<int>(tour.begin() + split2, tour.begin() + split3);
+                break;
+            case 3:
+                temp = vector<int>(tour.begin() + split3, tour.end());
+                break;
+            default:
+                break;
+        }
+
+        // randomly choose whether to reverse the subtour
+        if (dist_binary(rng) == 1) {
+            reverse(temp.begin(), temp.end());
+        }
+
+        // copy the subtour to the new tour
+        std::copy(temp.begin(), temp.end(), new_tour.begin() + index);
+        index += static_cast<int>(temp.size());
+    }
+
+    return new_tour;
+}
+
+void generalized_double_bridge_for_individual(Individual& ind, Case& instance, std::default_random_engine& rng) {
+    vector<int> chromosome = ind.get_chromosome();
+    ind.reset();
+
+    vector<int> new_chromosome = generalized_double_bridge(chromosome, rng);
+
+
+    pair<vector<int>, double> result = classical_split(new_chromosome, instance);
+    vector<int> split_path = result.first;
+
+    int route_index = 0;
+
+    int j = static_cast<int>(new_chromosome.size());
+    while (true) {
+        int i = split_path[j];
+
+        int customer_pos = 1;
+        for (auto it = new_chromosome.begin() + i; it < new_chromosome.begin() + j; ++it) {
+            ind.routes[route_index][customer_pos++] = *it;
+        }
+
+        ind.num_nodes_per_route[route_index] = customer_pos + 1;
+
+        route_index++; // Move to the next route
+
+        j = i;
+        if (i == 0) {
+            break;
+        }
+    }
+
+    ind.num_routes = route_index;
+    ind.upper_cost = result.second;
+    instance.compute_demand_sum_per_route(ind.routes, ind.num_routes, ind.num_nodes_per_route, ind.demand_sum_per_route);
+}
+
+
+/****************************************************************/
 /*                    Local search Operators                    */
 /****************************************************************/
 

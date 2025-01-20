@@ -56,6 +56,9 @@ vector<vector<int>> routes_constructor_with_split(Case& instance, std::default_r
 vector<vector<int>> routes_constructor_with_hien_method(const Case& instance, std::default_random_engine& rng);
 vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance, std::default_random_engine& rng);
 
+// perturbations
+vector<int> generalized_double_bridge(const std::vector<int>& tour, std::default_random_engine& rng);
+void generalized_double_bridge_for_individual(Individual& individual, Case& instance, std::default_random_engine& rng);
 
 // upper-level optimisation: local search operators => minimise the upper cost
 // due to the observation that the lower cost (CEVRP) is highly positive correlation with the upper cost (CVRP)
