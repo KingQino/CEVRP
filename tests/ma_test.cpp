@@ -27,7 +27,7 @@ protected:
 
 
 TEST_F(MaTest, AdmitOneIndividual) {
-    shared_ptr<Individual> ind_ptr = ma->admit_one_individual(instance->customers_);
+    shared_ptr<Individual> ind_ptr = ma->admit_one_individual(instance->customer_ids_);
 
     EXPECT_EQ(ind_ptr->num_routes, 5);
     EXPECT_DOUBLE_EQ(ind_ptr->upper_cost, 569.47817556079303);

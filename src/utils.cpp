@@ -99,7 +99,7 @@ vector<vector<int>> prins_split(const vector<int>& chromosome, Case& instance) {
 
 // Hien et al., "A greedy search based evolutionary algorithm for electric vehicle routing problem", 2023.
 vector<vector<int>> hien_clustering(const Case& instance, std::default_random_engine& rng) {
-    vector<int> customers_(instance.customers_);
+    vector<int> customers_(instance.customer_ids_);
 
     std::shuffle(customers_.begin(), customers_.end(), rng);
 
@@ -184,7 +184,7 @@ void hien_balancing(vector<vector<int>>& routes, const Case& instance, std::defa
 }
 
 vector<vector<int>> routes_constructor_with_split(Case& instance, std::default_random_engine& rng) {
-    vector<int> a_giant_tour(instance.customers_);
+    vector<int> a_giant_tour(instance.customer_ids_);
 
     shuffle(a_giant_tour.begin(), a_giant_tour.end(), rng);
 
@@ -211,7 +211,7 @@ vector<vector<int>> routes_constructor_with_hien_method(const Case& instance, st
 
 // Jia Ya-Hui, et al., "Confidence-Based Ant Colony Optimization for Capacitated Electric Vehicle Routing Problem With Comparison of Different Encoding Schemes", 2022
 vector<vector<int>> routes_constructor_with_direct_encoding(const Case& instance, std::default_random_engine& rng) {
-    vector<int> customers_(instance.customers_);
+    vector<int> customers_(instance.customer_ids_);
 
     int vehicle_idx = 0; // vehicle index - starts from the vehicle 0
     int load_of_one_route = 0; // the load of the current vehicle
@@ -2482,7 +2482,7 @@ ChargingMeta try_enumerate_n_stations_to_route(int m_len, int n_len, int* chosen
 
             // Iterate through stations
             while (s.stationIdx < instance.num_station_) {
-                chosen_sta[cur_upper_bound - s.n_len] = instance.stations_[s.stationIdx];
+                chosen_sta[cur_upper_bound - s.n_len] = instance.station_ids_[s.stationIdx];
                 chosen_pos[cur_upper_bound - s.n_len] = s.i;
 
                 // Push the next state for further exploration

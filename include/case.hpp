@@ -24,6 +24,14 @@ using namespace std;
 
 const string kDataPath = "../data/";
 
+typedef struct tCustomer {
+    int id;                     // Index of the customer
+    double coord_x;             // Coordinate X
+    double coord_y;             // Coordinate Y
+    double service_duration;    // Service duration
+    int demand;                 // Demand
+    int polar_angle;            // Polar angle of the customer around the depot, measured in degrees and truncated for convience
+} Customer;
 
 class Case {
 public:
@@ -34,8 +42,8 @@ public:
     void read_problem(const string& file_path);					//reads .evrp file
     static double **generate_2D_matrix_double(int n, int m);
 //    void init_customer_to_customers_maps(); // initialize customer_to_cluster_map_ and customer_to_restricted_candidate_list_map_
-    void init_customer_nearest_station_map();
-    double euclidean_distance(int i, int j);
+    // void init_customer_nearest_station_map();
+    [[nodiscard]] double euclidean_distance(int i, int j) const;
     [[nodiscard]] int get_best_station(int from, int to) const;
     [[nodiscard]] int get_best_and_feasible_station(int from, int to, double max_dis) const; // the station within allowed max distance from "from", and min dis[from][s]+dis[to][s]
     [[nodiscard]] int get_customer_demand_(int customer) const;				//returns the customer demand
@@ -66,17 +74,21 @@ public:
     vector<int> demand_;
     int depot_{};  //depot id (usually 0)
     double optimum_{};
-    vector<int> customers_;
-    vector<int> stations_;
+    vector<Customer> customers_;
+
+    vector<int> customer_ids_;
+    vector<int> station_ids_;
     double max_distance_{};
     int total_demand_{};
     double** distances_{};
     int** best_station_{}; // "best_station_" is designed for two customers, bringing the minimum extra cost.
     int** sorted_nearby_customers{};  // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {index 1: [5,3,2,6], index 2: [], ...}
+
+
     // key: customer id, value: a list of customer nodes from near to far (size = num_customer - 1)
 //    unordered_map<int, vector<int>> customer_to_cluster_map_; // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {1: [5,3,2,6], 2: [], ...}
     int restricted_candidate_list_size_{}; // min{num_customer_/2, 40}
-    unordered_map<int, pair<int, double>> customer_to_nearest_station_map_; // for each customer, find the nearest station and store the corresponding distance
+    // unordered_map<int, pair<int, double>> customer_to_nearest_station_map_; // for each customer, find the nearest station and store the corresponding distance
     double evals_{};
     double max_evals_{};
     int max_exec_time_{}; // seconds

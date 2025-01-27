@@ -32,14 +32,14 @@ protected:
 
 
 TEST_F(UtilsTest, PrinsSplit) {
-    vector<vector<int>> result = prins_split(    instance->customers_, *instance);
+    vector<vector<int>> result = prins_split(    instance->customer_ids_, *instance);
 
     EXPECT_EQ(result.size(), 5);
     EXPECT_EQ(result[0], vector<int>({19, 20, 21}));
 }
 
 TEST_F(UtilsTest, ClassicalSplit) {
-    pair<vector<int>, double> cl_sp = classical_split(instance->customers_, *instance);
+    pair<vector<int>, double> cl_sp = classical_split(instance->customer_ids_, *instance);
     vector<int> split_path = cl_sp.first;
 //    cout << split_path.size() << endl;
 //    for (const auto& node : split_path) {
@@ -47,7 +47,7 @@ TEST_F(UtilsTest, ClassicalSplit) {
 //    }
 //    cout << endl << endl;
 
-    vector<int> chromosome = instance->customers_;
+    vector<int> chromosome = instance->customer_ids_;
 
     int route_count = 0;                    // Counter for the number of routes
     vector<int> customers_per_route;        // Vector to store the number of customers per route

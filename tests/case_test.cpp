@@ -25,8 +25,8 @@ TEST_F(CaseTest, Init) {
     vector<int> customerOne2CustomerListNearToFar = {2, 6, 5, 3, 7, 4, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
 
     SCOPED_TRACE("Case init...");
-    EXPECT_EQ(instance->customers_.size(), 21);
-    EXPECT_EQ(instance->stations_.size(), 8);
+    EXPECT_EQ(instance->customer_ids_.size(), 21);
+    EXPECT_EQ(instance->station_ids_.size(), 8);
     EXPECT_EQ(instance->sorted_nearby_customers[1][0], 2);
     EXPECT_EQ(instance->sorted_nearby_customers[1][1], 6);
     EXPECT_EQ(instance->sorted_nearby_customers[1][2], 5);

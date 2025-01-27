@@ -13,7 +13,7 @@ using namespace magic_enum;
 
 enum class Algorithm { CBMA, LAHC };
 
-void run_algorithm(int run, Algorithm algorithm, const string& file_name, bool enable_logging, int stop_criteria_option, std::vector<double>& perfOfTrials) {
+void run_algorithm(const int run, const Algorithm algorithm, const string& file_name, const bool enable_logging, const int stop_criteria_option, std::vector<double>& perfOfTrials) {
     Case* instance = new Case(run, file_name);
 
     switch (algorithm) {

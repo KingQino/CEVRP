@@ -500,7 +500,7 @@ void Ma::mut_shuffle_indexes(vector<int>& chromosome, double independent_prob, s
 }
 
 vector<int> Ma::get_immigrant_chromosome(std::default_random_engine& rng) const {
-    vector<int> immigrant(instance->customers_);
+    vector<int> immigrant(instance->customer_ids_);
     std::shuffle(immigrant.begin(), immigrant.end(), rng);
 
     return std::move(immigrant);
