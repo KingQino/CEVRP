@@ -106,13 +106,15 @@ void Case::read_problem(const std::string &file_path) {
 
     // preprocess variables
     customers_ = vector<Customer>(num_customer_ + 1);
+    customers_[0].coord_x = positions_[0].first;
+    customers_[0].coord_y = positions_[0].second;
     for (int i = 1; i < num_depot_ + num_customer_; ++i) {
         customer_ids_.push_back(i);
         customers_[i].id = i;
         customers_[i].coord_x = positions_[i].first;
         customers_[i].coord_y = positions_[i].second;
         customers_[i].demand = demand_[i];
-        // TODO: polar angle
+        customers_[i].polar_angle = CircleSector::positive_mod(static_cast<int>(32768.*atan2(customers_[i].coord_y - customers_[0].coord_y, customers_[i].coord_x - customers_[0].coord_x) / PI) );
     }
     for (int i = num_depot_ + num_customer_; i < problem_size_; ++i) {
         station_ids_.push_back(i);

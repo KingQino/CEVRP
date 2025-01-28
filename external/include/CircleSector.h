@@ -45,7 +45,10 @@ SOFTWARE.*/
 
 // Simple data structure to represent circle sectors
 // Angles are measured in [0,65535] instead of [0,359], in such a way that modulo operations are much faster (since 2^16 = 65536)
-// Credit to Fabian Giesen at "https://web.archive.org/web/20200912191950/https://fgiesen.wordpress.com/2015/09/24/intervals-in-modular-arithmetic/" for useful implementation tips regarding interval overlaps in modular arithmetics 
+// Credit to Fabian Giesen at "https://web.archive.org/web/20200912191950/https://fgiesen.wordpress.com/2015/09/24/intervals-in-modular-arithmetic/" for useful implementation tips regarding interval overlaps in modular arithmetics
+
+#define PI 3.14159265359
+
 struct CircleSector
 {
 	int start;
@@ -67,7 +70,7 @@ struct CircleSector
 	}
 
 	// Tests if a point is enclosed in the circle sector
-	bool isEnclosed(int point)
+	[[nodiscard]] bool isEnclosed(int point) const
 	{
 		return (positive_mod(point - start) <= positive_mod(end - start));
 	}

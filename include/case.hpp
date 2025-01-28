@@ -19,6 +19,7 @@
 #include <cfloat>
 #include <cstdio>
 #include <numeric>
+#include "CircleSector.h"
 
 using namespace std;
 
