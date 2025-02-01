@@ -13,8 +13,8 @@ using namespace magic_enum;
 
 enum class Algorithm { CBMA, LAHC };
 
-void run_algorithm(const int run, const Algorithm algorithm, const string& file_name, const bool enable_logging, const int stop_criteria_option, std::vector<double>& perfOfTrials) {
-    Case* instance = new Case(run, file_name);
+void run_algorithm(const int run, const Algorithm algorithm, const string& file_name, const bool enable_logging, const int stop_criteria_option, const int num_granular, std::vector<double>& perfOfTrials) {
+    Case* instance = new Case(run, num_granular, file_name);
 
     switch (algorithm) {
         case Algorithm::CBMA: {
@@ -52,21 +52,22 @@ int main(int argc, char *argv[]) {
     bool enable_logging = std::stoi(argv[3]) != 0;
     int stop_criteria_option = std::stoi(argv[4]);
     int is_activate_multi_threading = std::stoi(argv[5]);
+    int num_granular = 20; // default value: number of granularity
 
     vector<double> perfOfTrials(MAX_TRIALS);
     if (is_activate_multi_threading == 1) {
         std::vector<std::thread> threads;
 
         for (run = 2; run <= MAX_TRIALS; ++run) {
-            threads.emplace_back(run_algorithm, run, algorithm, file_name, enable_logging, stop_criteria_option, std::ref(perfOfTrials));
+            threads.emplace_back(run_algorithm, run, algorithm, file_name, enable_logging, stop_criteria_option, num_granular, std::ref(perfOfTrials));
         }
-        run_algorithm(1, algorithm, file_name, enable_logging, stop_criteria_option, perfOfTrials);
+        run_algorithm(1, algorithm, file_name, enable_logging, stop_criteria_option, num_granular, perfOfTrials);
 
         for (auto& thread : threads) {
             thread.join();
         }
     } else {
-        run_algorithm(1, algorithm, file_name, enable_logging, stop_criteria_option, perfOfTrials);
+        run_algorithm(1, algorithm, file_name, enable_logging, stop_criteria_option, num_granular, perfOfTrials);
     }
 
     string stats_file_path = kStatsPath + "/" + static_cast<string>(enum_name(algorithm)) + "/" +

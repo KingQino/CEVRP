@@ -3,7 +3,11 @@
 //
 
 #include "gtest/gtest.h"
+#include <random>
 #include "case.hpp"
+#include "individual.hpp"
+#include "Split.h"
+#include "utils.hpp"
 
 using namespace ::testing;
 
@@ -11,7 +15,8 @@ class CaseTest : public ::testing::Test {
 protected:
     void SetUp() override {
         string file_name_ = "E-n22-k4.evrp";
-        instance = new Case(1, file_name_);
+        instance = new Case(1, 20, file_name_);
+        rng = std::default_random_engine(0);;
     }
 
     void TearDown() override {
@@ -19,6 +24,7 @@ protected:
     }
 
     Case* instance{};
+    std::default_random_engine rng;
 };
 
 TEST_F(CaseTest, Init) {
@@ -69,4 +75,20 @@ TEST_F(CaseTest, TotalDistanceAndDemandSum) {
 
     EXPECT_EQ(total_distance, 553.4851515212215);
     EXPECT_EQ(demand_sum_per_route, truth_demand_sum_per_route);
+}
+
+TEST_F(CaseTest, Split) {
+    Split split(instance);
+
+    int route_cap = instance->num_vehicle_ * 3;
+    int node_cap  = instance->num_customer_ + 1;
+    auto* ind_ptr = new Individual(route_cap, node_cap);
+
+    vector<int> chromosome(instance->customer_ids_);
+
+    shuffle(chromosome.begin(), chromosome.end(), rng);
+
+    split.generalSplit(chromosome, ind_ptr, instance->num_vehicle_);
+
+    EXPECT_EQ(ind_ptr->get_chromosome(), chromosome);
 }

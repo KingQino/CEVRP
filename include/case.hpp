@@ -29,7 +29,7 @@ typedef struct tCustomer {
     int id;                     // Index of the customer
     double coord_x;             // Coordinate X
     double coord_y;             // Coordinate Y
-    double service_duration;    // Service duration
+    double service_duration{};    // Service duration
     int demand;                 // Demand
     int polar_angle;            // Polar angle of the customer around the depot, measured in degrees and truncated for convience
 } Customer;
@@ -38,7 +38,7 @@ class Case {
 public:
     static const int MAX_EVALUATION_FACTOR;
 
-    Case(int id, const string& file_name);
+    Case(int id, int num_granular, const string& file_name);
     ~Case();
     void read_problem(const string& file_path);					//reads .evrp file
     static double **generate_2D_matrix_double(int n, int m);
@@ -60,6 +60,7 @@ public:
 
 
     int id_;
+    int num_granular_; // number of granularity
     string file_name_;
     string instance_name_;
 
@@ -75,16 +76,24 @@ public:
     vector<int> demand_;
     int depot_{};  //depot id (usually 0)
     double optimum_{};
-    vector<Customer> customers_;
-
     vector<int> customer_ids_;
     vector<int> station_ids_;
-    double max_distance_{};
+    double max_distance_{}; // the max distance the vehicle can travel without recharging the battery
     int total_demand_{};
     double** distances_{};
     int** best_station_{}; // "best_station_" is designed for two customers, bringing the minimum extra cost.
     int** sorted_nearby_customers{};  // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {index 1: [5,3,2,6], index 2: [], ...}
 
+    vector<Customer> customers_;
+    vector<vector<int>> correlated_vertices_;	// Neighborhood restrictions: For each client, list of nearby customers
+    double longest_arc_dis_{}; // in all arcs, the arc with the maximum distance
+    int    max_demand_{}; // in all customers, the customer with the maximum demand
+    bool is_duration_constraint_{};
+    double duration_limit_{};
+
+    /* ADAPTIVE PENALTY COEFFICIENTS */
+    double penalty_capacity_{};				// Penalty for one unit of capacity excess (adapted through the search)
+    double penalty_duration_{};				// Penalty for one unit of duration excess (adapted through the search)
 
     // key: customer id, value: a list of customer nodes from near to far (size = num_customer - 1)
 //    unordered_map<int, vector<int>> customer_to_cluster_map_; // For Hien's clustering usage only. For each customer, a list of customer nodes from near to far, e.g., {1: [5,3,2,6], 2: [], ...}

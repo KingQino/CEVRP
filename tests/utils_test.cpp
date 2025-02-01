@@ -12,7 +12,7 @@ class UtilsTest : public Test {
 protected:
     void SetUp() override {
         string file_name_ = "E-n22-k4.evrp";
-        instance = new Case(1, file_name_);
+        instance = new Case(1, 20, file_name_);
         rng = std::default_random_engine(0);;
 
         vector<vector<int>> routes = routes_constructor_with_hien_method(*instance, rng);

@@ -22,6 +22,8 @@ set(DEPENDENCIES
         include/heuristic_interface.hpp
         include/lahc.hpp
         src/lahc.cpp
+        external/include/Split.h    # 🔹 Include Split.h
+        external/src/Split.cpp      # 🔹 Include Split.cpp
 )
 
 

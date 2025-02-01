@@ -12,7 +12,7 @@ class MaTest : public Test {
 protected:
     void SetUp() override {
         string file_name_ = "E-n22-k4.evrp";
-        instance = new Case(1, file_name_);
+        instance = new Case(1, 20, file_name_);
         ma = new Ma(instance, 1, 0, false);
     }
 

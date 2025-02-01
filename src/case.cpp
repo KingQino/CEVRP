@@ -6,8 +6,9 @@
 
 const int Case::MAX_EVALUATION_FACTOR = 25'000;
 
-Case::Case(const int id, const string& file_name) {
+Case::Case(const int id, const int num_granular, const string& file_name) {
     this->id_ = id;
+    this->num_granular_ = num_granular;
     this->file_name_ = file_name;
     this->instance_name_ = file_name.substr(0, file_name.find('.'));
 
@@ -120,11 +121,13 @@ void Case::read_problem(const std::string &file_path) {
         station_ids_.push_back(i);
     }
     this->max_distance_ = max_battery_capa_ / energy_consumption_rate_;
+    this->max_demand_ = *std::max_element(demand_.begin(), demand_.end());
     this->total_demand_ = std::accumulate(demand_.begin(), demand_.end(), 0);
     this->distances_ = generate_2D_matrix_double(problem_size_, problem_size_);
     for (int i = 0; i < problem_size_; i++) {
         for (int j = 0; j < problem_size_; j++) {
             distances_[i][j] = euclidean_distance(i, j);
+            if (distances_[i][j] > longest_arc_dis_) longest_arc_dis_ = distances_[i][j];
         }
     }
     this->best_station_ = new int* [num_depot_ + num_customer_];
@@ -152,6 +155,38 @@ void Case::read_problem(const std::string &file_path) {
             return distances_[i][a] < distances_[i][b];
         });
     }
+    // Calculation of the correlated vertices for each customer (for the granular restriction)
+    correlated_vertices_ = vector<vector<int>>(num_customer_ + 1);
+    vector<set<int>> set_correlated_vertices = vector<set<int>>(num_customer_ + 1);
+    vector<pair<double, int>> order_proximity;
+    for (int i = 1; i <= num_customer_; i++) {
+        order_proximity.clear();
+        for (int j = 1; j <= num_customer_; j++) {
+            if (i == j) continue;
+            order_proximity.emplace_back(distances_[i][j], j);
+        }
+        std::sort(order_proximity.begin(), order_proximity.end());
+        for (int j = 0; j < std::min<int>(num_granular_, num_customer_ - 1); ++j) {
+            //  if i is correlated with j, then j should be correlated with i
+            set_correlated_vertices[i].insert(order_proximity[j].second);
+            set_correlated_vertices[order_proximity[j].second].insert(i);
+        }
+    }
+    // Filling the vector with correlated vertices
+    for (int i = 1; i <= num_customer_; i++) {
+        for (int x : set_correlated_vertices[i]) {
+            correlated_vertices_[i].push_back(x);
+        }
+    }
+
+    // A reasonable scale for the initial values of the penalties
+    this->penalty_duration_ = 1;
+    this->penalty_capacity_ = std::max<double>(0.1, std::min<double>(1000., longest_arc_dis_ / max_demand_));
+
+    this->is_duration_constraint_ = false;
+    this->duration_limit_ = 1.e30;
+
+
     this->restricted_candidate_list_size_ = min(num_customer_ / 2, 40);
 
     // init_customer_nearest_station_map();
@@ -166,7 +201,7 @@ void Case::read_problem(const std::string &file_path) {
         max_exec_time_ = static_cast<int>(3 * (problem_size_ / 100.0) * 60 * 60);
     }
     this->convergence_epsilon_ = 1e-4; // 0.0001
-    this->max_no_change_count_ = 800; // adjust further
+    this->max_no_change_count_ = 800; // adjust further  default: 20,000
 
 }
 
